@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::sync::Arc;
 
+
 use datafusion::common::{internal_err, plan_err, Column};
 use datafusion::error::Result;
 use datafusion::sql::TableReference;
@@ -9,6 +10,7 @@ use petgraph::Graph;
 
 use crate::logical_plan::utils::from_qualified_name;
 use crate::mdl::{utils, WrenMDL};
+
 
 use super::manifest::{JoinType, Relationship};
 use super::utils::{
@@ -35,6 +37,7 @@ impl Lineage {
             required_dataset_topo,
         })
     }
+
 
     fn collect_source_columns(mdl: &WrenMDL) -> Result<HashMap<Column, HashSet<Column>>> {
         let mut source_columns_map = HashMap::new();
@@ -258,22 +261,34 @@ fn consume_pending_field(
     value: Column,
     source_column: &Column,
 ) -> Result<()> {
-    let Some(fields) = required_fields_map.get_mut(&value) else {
-        return plan_err!("pending field not found: {}", value);
-    };
-    for field in fields.clone() {
-        let Some(source_column_ref) = mdl.get_column_reference(&field) else {
-            return plan_err!("source column not found: {}", field);
+    // Iterative processing to avoid deep recursion
+    let mut stack: Vec<Column> = vec![value];
+
+    while let Some(current) = stack.pop() {
+        // Clone fields to avoid borrowing issues while mutating the map
+        let fields = match required_fields_map.get(&current) {
+            Some(set) => set.clone(),
+            None => return plan_err!("pending field not found: {}", current),
         };
-        if source_column_ref.column.is_calculated {
-            consume_pending_field(mdl, required_fields_map, field, &value)?;
-        } else {
-            required_fields_map
-                .entry(source_column.clone())
-                .or_default()
-                .insert(field);
+
+        for field in fields {
+            let Some(source_column_ref) = mdl.get_column_reference(&field) else {
+                return plan_err!("source column not found: {}", field);
+            };
+
+            if source_column_ref.column.is_calculated {
+                // Process calculated fields later
+                stack.push(field);
+            } else {
+                // Base case: add resolved field to the source column set
+                required_fields_map
+                    .entry(source_column.clone())
+                    .or_default()
+                    .insert(field);
+            }
         }
     }
+
     Ok(())
 }
 

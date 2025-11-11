@@ -25,6 +25,17 @@ use datafusion::sql::sqlparser::ast::{self, WindowFrameBound};
 use datafusion::sql::unparser::dialect::{Dialect, IntervalStyle};
 use datafusion::sql::unparser::Unparser;
 use regex::Regex;
+use std::sync::OnceLock;
+
+// Cache compiled regex pattern to avoid recompiling on every call
+static IDENTIFIER_REGEX: OnceLock<Regex> = OnceLock::new();
+
+fn get_identifier_regex() -> &'static Regex {
+    IDENTIFIER_REGEX.get_or_init(|| {
+        Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+            .expect("Identifier regex should be valid")
+    })
+}
 
 /// WrenDialect is a dialect for Wren engine. Handle the identifier quote style based on the
 /// original Datafusion Dialect implementation but with more strict rules.
@@ -39,7 +50,8 @@ impl Dialect for WrenDialect {
             return Some(quote);
         }
 
-        let identifier_regex = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+        // Use cached regex instead of compiling on every call
+        let identifier_regex = get_identifier_regex();
         if ALL_KEYWORDS.contains(&identifier.to_uppercase().as_str())
             || !identifier_regex.is_match(identifier)
             || non_lowercase(identifier)

@@ -36,6 +36,7 @@ use wren_core_base::mdl::DataSource;
 pub mod builder {
     pub use wren_core_base::mdl::builder::*;
 }
+pub mod cache;
 pub mod context;
 pub(crate) mod dataset;
 mod dialect;
@@ -49,6 +50,7 @@ pub mod utils;
 
 pub type SessionStateRef = Arc<RwLock<SessionState>>;
 
+#[derive(Clone)]
 pub struct AnalyzedWrenMDL {
     pub wren_mdl: Arc<WrenMDL>,
     pub lineage: Arc<lineage::Lineage>,
@@ -73,7 +75,25 @@ impl Default for AnalyzedWrenMDL {
 }
 
 impl AnalyzedWrenMDL {
+    /// Analyze MDL with caching support
     pub fn analyze(
+        manifest: Manifest,
+        properties: SessionPropertiesRef,
+        mode: Mode,
+    ) -> Result<Self> {
+        // Use cached version - compute_analyzed_mdl_cached handles cache lookup and computation
+        let cached = cache::compute_analyzed_mdl_cached(manifest, properties, mode)?;
+        
+        // Convert Arc<AnalyzedWrenMDL> to AnalyzedWrenMDL
+        // Try to unwrap, if that fails (multiple references), clone
+        match Arc::try_unwrap(cached) {
+            Ok(analyzed) => Ok(analyzed),
+            Err(arc) => Ok((*arc).clone()),
+        }
+    }
+
+    /// Analyze MDL without caching (internal use)
+    pub(crate) fn analyze_uncached(
         manifest: Manifest,
         properties: SessionPropertiesRef,
         mode: Mode,
@@ -81,7 +101,11 @@ impl AnalyzedWrenMDL {
         let wren_mdl = Arc::new(WrenMDL::infer_and_register_remote_table(
             manifest, properties, mode,
         )?);
-        let lineage = Arc::new(lineage::Lineage::new(&wren_mdl)?);
+        // Use cached lineage if available
+        let lineage = match cache::compute_lineage_cached(&wren_mdl) {
+            Ok(cached) => cached,
+            Err(_) => Arc::new(lineage::Lineage::new(&wren_mdl)?),
+        };
         Ok(AnalyzedWrenMDL { wren_mdl, lineage })
     }
 
@@ -93,15 +117,20 @@ impl AnalyzedWrenMDL {
         for (name, table) in register_tables {
             wren_mdl.register_table(name, table);
         }
-        let lineage = lineage::Lineage::new(&wren_mdl)?;
+        // Use cached lineage if available (cache key based on manifest only)
+        let lineage = match cache::compute_lineage_cached(&wren_mdl) {
+            Ok(cached) => cached,
+            Err(_) => Arc::new(lineage::Lineage::new(&wren_mdl)?),
+        };
         Ok(AnalyzedWrenMDL {
             wren_mdl: Arc::new(wren_mdl),
-            lineage: Arc::new(lineage),
+            lineage,
         })
     }
 
     pub fn wren_mdl(&self) -> Arc<WrenMDL> {
-        Arc::clone(&self.wren_mdl)
+        // Use clone() method instead of Arc::clone() for better readability
+        self.wren_mdl.clone()
     }
 
     pub fn lineage(&self) -> &lineage::Lineage {
@@ -174,8 +203,17 @@ impl WrenMDL {
             });
         });
 
+        // Pre-allocate string with estimated capacity for catalog_schema_prefix
+        let catalog_len = manifest.catalog.len();
+        let schema_len = manifest.schema.len();
+        let mut catalog_schema_prefix = String::with_capacity(catalog_len + schema_len + 2);
+        catalog_schema_prefix.push_str(&manifest.catalog);
+        catalog_schema_prefix.push('.');
+        catalog_schema_prefix.push_str(&manifest.schema);
+        catalog_schema_prefix.push('.');
+
         WrenMDL {
-            catalog_schema_prefix: format!("{}.{}.", &manifest.catalog, &manifest.schema),
+            catalog_schema_prefix,
             manifest,
             qualified_references: qualifed_references,
             register_tables: HashMap::new(),
@@ -412,10 +450,11 @@ pub async fn transform_sql_with_ctx(
         register_remote_function(ctx, remote_function)?;
         Ok::<_, DataFusionError>(())
     })?;
+    // Pass Arc directly without cloning since we already own it
     let ctx = apply_wren_on_ctx(
         ctx,
-        Arc::clone(&analyzed_mdl),
-        Arc::clone(&properties),
+        analyzed_mdl.clone(),
+        properties.clone(),
         Mode::Unparse,
     )
     .await?;
@@ -444,16 +483,20 @@ pub async fn transform_sql_with_ctx(
     let analyzed = ctx.state().optimize(&plan)?;
     debug!("wren-core final planned:\n {analyzed}");
 
-    let data_source = analyzed_mdl.wren_mdl().data_source().unwrap_or_default();
+    // Cache wren_mdl to avoid multiple clones
+    let wren_mdl = analyzed_mdl.wren_mdl();
+    let data_source = wren_mdl.data_source().unwrap_or_default();
     let wren_dialect = WrenDialect::new(&data_source);
     let unparser = Unparser::new(&wren_dialect).with_pretty(true);
     // show the planned sql
     match unparser.plan_to_sql(&analyzed) {
-        Ok(sql) => {
+        Ok(stmt) => {
             // TODO: workaround to remove unnecessary catalog and schema of mdl
-            let replaced = sql
-                .to_string()
-                .replace(analyzed_mdl.wren_mdl().catalog_schema_prefix(), "");
+            // Use efficient string replacement with pre-allocated capacity
+            use crate::performance::string_ops;
+            let prefix = wren_mdl.catalog_schema_prefix();
+            let planned = stmt.to_string();
+            let replaced = string_ops::replace_efficient(&planned, prefix, "");
             info!("wren-core planned SQL: {replaced}");
             Ok(replaced)
         }
@@ -472,9 +515,10 @@ async fn permission_analyze(
     remote_functions: &[RemoteFunction],
     properties: SessionPropertiesRef,
 ) -> Result<()> {
+    // Clone properties for new analyzed_mdl (needed for ownership)
     let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
         manifest,
-        Arc::clone(&properties),
+        properties.clone(),
         Mode::PermissionAnalyze,
     )?);
     let ctx = create_wren_ctx(None);

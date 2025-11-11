@@ -2,7 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
-
+use futures::future::try_join_all;
 use crate::logical_plan::analyze::access_control::validate_clac_rule;
 use crate::logical_plan::analyze::expand_view::ExpandWrenViewRule;
 use crate::logical_plan::analyze::model_anlayze::ModelAnalyzeRule;
@@ -98,10 +98,11 @@ pub async fn apply_wren_on_ctx(
             .collect::<HashMap<_, _>>(),
     );
 
+    // Clone Arc only once for analyzer rules
     let new_state = new_state.with_analyzer_rules(mode.get_analyze_rules(
-        Arc::clone(&analyzed_mdl),
-        Arc::clone(&reset_default_catalog_schema),
-        Arc::clone(&properties),
+        analyzed_mdl.clone(),
+        reset_default_catalog_schema.clone(),
+        properties.clone(),
     ));
     let new_state = if let Some(optimize_rules) = mode.get_optimize_rules() {
         new_state.with_optimizer_rules(optimize_rules)
@@ -116,7 +117,7 @@ pub async fn apply_wren_on_ctx(
 }
 
 /// Execution mode for Wren engine.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
     /// Local runtime mode, used for executing queries by DataFusion directly.
     LocalRuntime,
@@ -304,11 +305,12 @@ pub async fn register_table_with_mdl(
     catalog.register_schema(&wren_mdl.manifest.schema, Arc::new(schema))?;
     ctx.register_catalog(&wren_mdl.manifest.catalog, Arc::new(catalog));
 
+    // Clone model and analyzed_mdl for each table registration (needed for ownership)
     for model in wren_mdl.manifest.models.iter() {
         let table = WrenDataSource::new(
-            Arc::clone(model),
+            model.clone(),
             &properties,
-            Arc::clone(&analyzed_mdl),
+            analyzed_mdl.clone(),
             &mode,
         )?;
         ctx.register_table(
@@ -316,11 +318,24 @@ pub async fn register_table_with_mdl(
             Arc::new(table),
         )?;
     }
-    for view in wren_mdl.manifest.views.iter() {
-        let plan = ctx.state().create_logical_plan(&view.statement).await?;
-        let view_table = ViewTable::new(plan, Some(view.statement.clone()));
+    // Build view logical plans in parallel
+    let view_futures = wren_mdl
+        .manifest
+        .views
+        .iter()
+        .map(|view| {
+            let statement = view.statement.clone();
+            let name = view.name().to_string();
+            async move {
+                let plan = ctx.state().create_logical_plan(&statement).await?;
+                Ok::<(String, datafusion::logical_expr::LogicalPlan, String), datafusion::error::DataFusionError>((name, plan, statement))
+            }
+        });
+    let built_views = try_join_all(view_futures).await?;
+    for (name, plan, statement) in built_views {
+        let view_table = ViewTable::new(plan, Some(statement));
         ctx.register_table(
-            TableReference::full(wren_mdl.catalog(), wren_mdl.schema(), view.name()),
+            TableReference::full(wren_mdl.catalog(), wren_mdl.schema(), name),
             Arc::new(view_table),
         )?;
     }
@@ -348,11 +363,12 @@ impl WrenDataSource {
                         model.name(),
                         column,
                         properties,
-                        Some(Arc::clone(&analyzed_mdl)),
+                        Some(analyzed_mdl.clone()),
                     )?
                     .0
                 {
-                    Ok(Some(Arc::clone(column)))
+                    // Clone column for ownership in available_columns vector
+                    Ok(Some(column.clone()))
                 } else {
                     Ok(None)
                 }
