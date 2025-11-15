@@ -1,0 +1,141 @@
+FROM python:3.11-bookworm AS builder
+
+ARG ENV
+ENV ENV=$ENV
+
+# libpq-dev is required for psycopg2
+RUN apt-get update && apt-get -y install libpq-dev
+
+# Install rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install git for Cargo git-fetch and ensure certs present
+RUN apt-get update && apt-get -y install git ca-certificates && update-ca-certificates
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
+    && git config --global url."https://github.com/".insteadOf "git@github.com:"
+# Harden git/cargo for slow or flaky networks
+RUN git config --global http.lowSpeedLimit 0 \
+    && git config --global http.lowSpeedTime 600 \
+    && git config --global http.postBuffer 524288000 \
+    && git config --global http.followRedirects true
+ENV GIT_HTTP_LOW_SPEED_LIMIT=0 \
+    GIT_HTTP_LOW_SPEED_TIME=600 \
+    CARGO_HTTP_TIMEOUT=600 \
+    CARGO_NET_RETRY=5 \
+    CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
+# Install justfile
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/bin
+
+    # python
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    # pip
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=600 \
+    # poetry
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1
+
+RUN pip install poetry==1.8.3
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    printf "[global]\nretries = 10\ntimeout = 600\nindex-url = https://pypi.org/simple\n" > /etc/pip.conf && \
+    mkdir -p /etc/pip && \
+    printf "[global]\nretries = 10\ntimeout = 600\nindex-url = https://pypi.org/simple\n" > /etc/pip/pip.conf
+RUN poetry config installer.max-workers 1
+
+# Copy wren-core dependencies from parent directory (build context is repo root)
+COPY wren-core-py /wren-core-py
+COPY wren-core /wren-core
+COPY wren-core-base /wren-core-base
+
+# Refresh Rust dependencies lockfile to avoid maturin --locked failures (with retries/backoff)
+RUN set -e; cd /wren-core-py; \
+    for i in 1 2 3 4 5; do \
+      cargo update -w && break; \
+      echo "cargo update failed ($i/5). Retrying in 20s..." && sleep 20; \
+    done
+
+WORKDIR /app
+# Copy ibis-server files
+COPY ibis-server/ .
+RUN set -e; for i in 1 2 3 4 5; do \
+      just install --without dev && break; \
+      echo "just install failed ($i/5). Retrying in 20s..." && sleep 20; \
+    done
+
+
+FROM python:3.11-slim-bookworm AS runtime
+
+# Add microsoft package list
+RUN apt-get update \
+    && apt-get install -y curl gnupg \
+    && apt-get install -y bash \
+    && curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg \
+    && echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" | tee /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update
+
+# Install msodbcsql 18 driver for mssql
+RUN ACCEPT_EULA=Y apt-get -y install unixodbc-dev msodbcsql18
+
+# Install libmysqlclient-dev for mysql
+RUN apt-get install -y default-libmysqlclient-dev
+
+# libpq-dev is required for psycopg2
+RUN apt-get -y install libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app" \
+    REMOTE_FUNCTION_LIST_PATH=/app/resources/function_list \
+    REMOTE_WHITE_FUNCTION_LIST_PATH=/app/resources/white_function_list
+
+# Set working directory before copying files
+WORKDIR /app
+
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY ibis-server/app ./app/
+COPY ibis-server/resources ./resources/
+COPY ibis-server/notebooks ./notebooks/
+COPY ibis-server/wren/ ./wren/
+
+# Copy pyproject.toml and poetry.lock for poetry to work
+COPY ibis-server/pyproject.toml ibis-server/poetry.lock ./
+
+# Install poetry in runtime stage
+RUN pip install poetry==1.8.3
+RUN python -m pip install --upgrade pip setuptools wheel && \
+    printf "[global]\nretries = 10\ntimeout = 600\nindex-url = https://pypi.org/simple\n" > /etc/pip.conf && \
+    mkdir -p /etc/pip && \
+    printf "[global]\nretries = 10\ntimeout = 600\nindex-url = https://pypi.org/simple\n" > /etc/pip/pip.conf
+RUN poetry config installer.max-workers 1
+
+# Install jupyter dependencies
+RUN set -e; for i in 1 2 3; do \
+      poetry install --without dev --with jupyter && break; \
+      echo "poetry install failed ($i/3). Retrying in 20s..." && sleep 20; \
+    done
+
+# runtime
+COPY --from=builder /app/.venv ${VIRTUAL_ENV}
+
+# Install Opentelemetry zero-instrumentation python
+RUN pip install opentelemetry-distro opentelemetry-exporter-otlp \
+    && opentelemetry-bootstrap -a install
+
+# Generate jupyter lab config
+RUN jupyter lab --generate-config --allow-root
+
+COPY ibis-server/entrypoint.sh ./
+RUN sed -i 's/\r$//' ./entrypoint.sh && chmod +x ./entrypoint.sh
+
+EXPOSE 8000 8888
+
+ENTRYPOINT ["./entrypoint.sh"]
+

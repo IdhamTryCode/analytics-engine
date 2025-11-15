@@ -1,6 +1,13 @@
 services:
   ibis-server:
-    image: ghcr.io/canner/wren-engine-ibis:latest
+    # Build from local source instead of using pre-built image
+    build:
+      context: .
+      dockerfile: ibis-server/Dockerfile.local
+      network: host
+    # Uncomment below to use pre-built image from registry
+    # image: ghcr.io/canner/wren-engine-ibis:latest
+    image: wren-engine-ibis:local
     ports:
       - "8000:8000"
     environment:
@@ -12,7 +19,19 @@ services:
     restart: unless-stopped
 
   java-engine:
-    image: ghcr.io/canner/wren-engine:latest
+    # Build from local source - requires JAR file to be built first
+    # Run: cd wren-core-legacy && ./mvnw clean install -DskipTests -P exec-jar
+    build:
+      context: ./wren-core-legacy
+      dockerfile: docker/Dockerfile.local
+      args:
+        # Get version from pom.xml: ./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout
+        # Or set via: WREN_VERSION=0.21.3-SNAPSHOT docker-compose build
+        WREN_VERSION: ${WREN_VERSION:-0.21.3-SNAPSHOT}
+      # JAR file should be at: wren-server/target/wren-server-${WREN_VERSION}-executable.jar
+    # Uncomment below to use pre-built image from registry
+    # image: ghcr.io/canner/wren-engine:latest
+    image: wren-engine:local
     ports:
       - "8080:8080"
     volumes:
