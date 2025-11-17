@@ -27,8 +27,9 @@ ENV GIT_HTTP_LOW_SPEED_LIMIT=0 \
     CARGO_HTTP_MULTIPLEXING=false \
     CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-# Install justfile
-RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/bin
+# Install justfile via cargo (alternative to install.sh which may return 403)
+RUN cargo install just --locked
+ENV PATH="/root/.cargo/bin:$PATH"
 
     # python
 ENV PYTHONUNBUFFERED=1 \

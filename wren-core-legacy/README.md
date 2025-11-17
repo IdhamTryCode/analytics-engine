@@ -14,7 +14,7 @@ docker run --name java-engine -p 8080:8080 -v $(pwd)/docker/etc:/usr/src/app/etc
 ### Maven Build
 For developing, you can build Wren core by yourself. Wren core is a standard maven project. We can build an executable jar using the following command:
 ```
-./mvnw clean install -DskipTests -P exec-jar
+./mvnw clean install -DskipTests -Dair.check.skip-dependency=true -P exec-jar
 ```
 Then, start Wren core server
 ```

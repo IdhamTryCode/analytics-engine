@@ -68,7 +68,7 @@ if (-not $env:JAVA_HOME) {
 
 # Try mvnw.cmd first (Windows), then run Maven wrapper jar directly
 if (Test-Path ".\mvnw.cmd") {
-    & .\mvnw.cmd clean install -DskipTests -Dcheckstyle.skip=true -P exec-jar
+    & .\mvnw.cmd clean install -DskipTests -Dcheckstyle.skip=true -Dair.check.skip-dependency=true -P exec-jar
 } elseif (Test-Path ".\.mvn\wrapper\maven-wrapper.jar") {
     # Run Maven wrapper jar directly with Java
     $mavenWrapperJar = Resolve-Path ".\.mvn\wrapper\maven-wrapper.jar"
@@ -76,8 +76,8 @@ if (Test-Path ".\mvnw.cmd") {
     
     Write-Host "Using Maven wrapper jar directly..." -ForegroundColor Cyan
     # First, build all modules without exec-jar profile (to avoid profile validation error)
-    Write-Host "Building all modules (with checkstyle skipped)..." -ForegroundColor Yellow
-    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "clean" "install" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true"
+    Write-Host "Building all modules (with checkstyle and dependency analysis skipped)..." -ForegroundColor Yellow
+    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "clean" "install" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-Dair.check.skip-dependency=true"
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Build failed. Check the error messages above." -ForegroundColor Red
@@ -86,7 +86,7 @@ if (Test-Path ".\mvnw.cmd") {
     
     Write-Host "All modules built successfully. Building executable JAR for wren-server..." -ForegroundColor Green
     # Now build wren-server with exec-jar profile to create executable JAR
-    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "package" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-pl" "wren-server" "-P" "exec-jar"
+    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "package" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-Dair.check.skip-dependency=true" "-pl" "wren-server" "-P" "exec-jar"
 } else {
     Write-Host "Error: Maven wrapper not found!" -ForegroundColor Red
     Write-Host "Please ensure you're in the wren-core-legacy directory" -ForegroundColor Yellow

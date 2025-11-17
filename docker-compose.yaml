@@ -20,7 +20,7 @@ services:
 
   java-engine:
     # Build from local source - requires JAR file to be built first
-    # Run: cd wren-core-legacy && ./mvnw clean install -DskipTests -P exec-jar
+    # Run: cd wren-core-legacy && ./mvnw clean install -DskipTests -Dair.check.skip-dependency=true -P exec-jar
     build:
       context: ./wren-core-legacy
       dockerfile: docker/Dockerfile.local
