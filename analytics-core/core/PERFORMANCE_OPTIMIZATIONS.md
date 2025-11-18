@@ -9,7 +9,7 @@ This document tracks the performance optimizations made to reduce unnecessary `A
 ### 1. `transform_sql_with_ctx` (mod.rs:415-422)
 **Before:**
 ```rust
-let ctx = apply_wren_on_ctx(
+let ctx = apply_analytics_on_ctx(
     ctx,
     Arc::clone(&analyzed_mdl),
     Arc::clone(&properties),
@@ -20,7 +20,7 @@ let ctx = apply_wren_on_ctx(
 **After:**
 ```rust
 // Pass Arc directly without cloning since we already own it
-let ctx = apply_wren_on_ctx(
+let ctx = apply_analytics_on_ctx(
     ctx,
     analyzed_mdl.clone(),
     properties.clone(),
@@ -30,7 +30,7 @@ let ctx = apply_wren_on_ctx(
 
 **Impact:** More idiomatic code, same performance (Arc::clone() and .clone() are equivalent for Arc)
 
-### 2. `apply_wren_on_ctx` (context.rs:101-106)
+### 2. `apply_analytics_on_ctx` (context.rs:101-106)
 **Before:**
 ```rust
 let new_state = new_state.with_analyzer_rules(mode.get_analyze_rules(
@@ -52,19 +52,19 @@ let new_state = new_state.with_analyzer_rules(mode.get_analyze_rules(
 
 **Impact:** More readable code
 
-### 3. `wren_mdl()` method (mod.rs:103-106)
+### 3. `analytics_mdl()` method (mod.rs:103-106)
 **Before:**
 ```rust
-pub fn wren_mdl(&self) -> Arc<WrenMDL> {
-    Arc::clone(&self.wren_mdl)
+pub fn analytics_mdl(&self) -> Arc<AnalyticsMDL> {
+    Arc::clone(&self.analytics_mdl)
 }
 ```
 
 **After:**
 ```rust
-pub fn wren_mdl(&self) -> Arc<WrenMDL> {
+pub fn analytics_mdl(&self) -> Arc<AnalyticsMDL> {
     // Use clone() method instead of Arc::clone() for better readability
-    self.wren_mdl.clone()
+    self.analytics_mdl.clone()
 }
 ```
 
@@ -73,7 +73,7 @@ pub fn wren_mdl(&self) -> Arc<WrenMDL> {
 ### 4. `permission_analyze` (mod.rs:477-482)
 **Before:**
 ```rust
-let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
     manifest,
     Arc::clone(&properties),
     Mode::PermissionAnalyze,
@@ -83,7 +83,7 @@ let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
 **After:**
 ```rust
 // Clone properties for new analyzed_mdl (needed for ownership)
-let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
     manifest,
     properties.clone(),
     Mode::PermissionAnalyze,
@@ -95,8 +95,8 @@ let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
 ### 5. `register_table_with_mdl` (context.rs:308-315)
 **Before:**
 ```rust
-for model in wren_mdl.manifest.models.iter() {
-    let table = WrenDataSource::new(
+for model in analytics_mdl.manifest.models.iter() {
+    let table = AnalyticsDataSource::new(
         Arc::clone(model),
         &properties,
         Arc::clone(&analyzed_mdl),
@@ -107,8 +107,8 @@ for model in wren_mdl.manifest.models.iter() {
 **After:**
 ```rust
 // Clone model and analyzed_mdl for each table registration (needed for ownership)
-for model in wren_mdl.manifest.models.iter() {
-    let table = WrenDataSource::new(
+for model in analytics_mdl.manifest.models.iter() {
+    let table = AnalyticsDataSource::new(
         model.clone(),
         &properties,
         analyzed_mdl.clone(),
@@ -118,7 +118,7 @@ for model in wren_mdl.manifest.models.iter() {
 
 **Impact:** More readable code
 
-### 6. `WrenDataSource::new` (context.rs:348-358)
+### 6. `AnalyticsDataSource::new` (context.rs:348-358)
 **Before:**
 ```rust
 if mode.is_permission_analyze()
@@ -150,28 +150,28 @@ if mode.is_permission_analyze()
 
 **Impact:** More readable code
 
-### 7. `transform_sql_with_ctx` - Cache wren_mdl (mod.rs:449-460)
+### 7. `transform_sql_with_ctx` - Cache analytics_mdl (mod.rs:449-460)
 **Before:**
 ```rust
-let data_source = analyzed_mdl.wren_mdl().data_source().unwrap_or_default();
+let data_source = analyzed_mdl.analytics_mdl().data_source().unwrap_or_default();
 // ... later ...
 let replaced = sql
     .to_string()
-    .replace(analyzed_mdl.wren_mdl().catalog_schema_prefix(), "");
+    .replace(analyzed_mdl.analytics_mdl().catalog_schema_prefix(), "");
 ```
 
 **After:**
 ```rust
-// Cache wren_mdl to avoid multiple clones
-let wren_mdl = analyzed_mdl.wren_mdl();
-let data_source = wren_mdl.data_source().unwrap_or_default();
+// Cache analytics_mdl to avoid multiple clones
+let analytics_mdl = analyzed_mdl.analytics_mdl();
+let data_source = analytics_mdl.data_source().unwrap_or_default();
 // ... later ...
 let replaced = sql
     .to_string()
-    .replace(wren_mdl.catalog_schema_prefix(), "");
+    .replace(analytics_mdl.catalog_schema_prefix(), "");
 ```
 
-**Impact:** Reduced one `wren_mdl()` call (saves one Arc clone per SQL transformation)
+**Impact:** Reduced one `analytics_mdl()` call (saves one Arc clone per SQL transformation)
 
 ## Statistics
 
@@ -185,7 +185,7 @@ let replaced = sql
 
 1. **Arc::clone() vs .clone()**: For `Arc<T>`, both `Arc::clone(&arc)` and `arc.clone()` are equivalent - they both increment the reference count. The optimization here is primarily about code readability and consistency.
 
-2. **Actual Clone Reduction**: The most significant optimization is #7, which caches `wren_mdl` to avoid calling `wren_mdl()` twice, saving one Arc clone per SQL transformation.
+2. **Actual Clone Reduction**: The most significant optimization is #7, which caches `analytics_mdl` to avoid calling `analytics_mdl()` twice, saving one Arc clone per SQL transformation.
 
 3. **Remaining Clones**: Many remaining `Arc::clone()` calls are necessary for ownership transfer (e.g., storing in collections, passing to async functions that need ownership).
 

@@ -3597,7 +3597,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sqlparser 0.58.0",
- "wren-manifest-macro",
+ "analytics-manifest-macro",
 ]
 
 [[package]]
@@ -3620,7 +3620,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wren-manifest-macro"
+name = "analytics-manifest-macro"
 version = "0.1.0"
 dependencies = [
  "quote",

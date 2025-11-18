@@ -3,7 +3,7 @@ use crate::logical_plan::analyze::scope::{ScopeId, ScopeManager};
 use crate::logical_plan::utils::{belong_to_mdl, expr_to_columns};
 use crate::mdl::context::SessionPropertiesRef;
 use crate::mdl::utils::quoted;
-use crate::mdl::{AnalyzedWrenMDL, Dataset, SessionStateRef};
+use crate::mdl::{AnalyzedAnalyticsMDL, Dataset, SessionStateRef};
 use datafusion::common::tree_node::{Transformed, TransformedResult, TreeNode};
 use datafusion::common::{internal_err, plan_err, Column, DFSchemaRef, Result, Spans};
 use datafusion::config::ConfigOptions;
@@ -27,12 +27,12 @@ use std::sync::Arc;
 /// There are three main steps in this rule:
 /// 1. Analyze the scope of the logical plan and collect the required columns for models and visited tables. (button-up and depth-first)
 /// 2. Analyze the model and generate the ModelPlanNode according to the scope analysis. (button-up and depth-first)
-/// 3. Remove the catalog and schema prefix of Wren for the column and refresh the schema. (top-down)
+/// 3. Remove the catalog and schema prefix of Analytics for the column and refresh the schema. (top-down)
 ///
 /// The traverse path of step 1 and step 2 should be same.
 /// The corresponding scope will be pushed to or popped from the childs of [Scope] sequentially.
 pub struct ModelAnalyzeRule {
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state: SessionStateRef,
     properties: SessionPropertiesRef,
 }
@@ -57,7 +57,7 @@ impl AnalyzerRule for ModelAnalyzeRule {
                 plan.transform_up_with_subqueries(&|plan| -> Result<
                     Transformed<LogicalPlan>,
                 > {
-                    self.remove_wren_catalog_schema_prefix_and_refresh_schema(plan)
+                    self.remove_analytics_catalog_schema_prefix_and_refresh_schema(plan)
                 })
                 .data()
             })?
@@ -72,12 +72,12 @@ impl AnalyzerRule for ModelAnalyzeRule {
 
 impl ModelAnalyzeRule {
     pub fn new(
-        analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state: SessionStateRef,
         properties: SessionPropertiesRef,
     ) -> Self {
         Self {
-            analyzed_wren_mdl,
+            analyzed_analytics_mdl,
             session_state,
             properties,
         }
@@ -138,13 +138,13 @@ impl ModelAnalyzeRule {
         match &plan {
             LogicalPlan::TableScan(table_scan) => {
                 if belong_to_mdl(
-                    &self.analyzed_wren_mdl.wren_mdl(),
+                    &self.analyzed_analytics_mdl.analytics_mdl(),
                     table_scan.table_name.clone(),
                     Arc::clone(&self.session_state),
                 ) {
                     if let Some(model) = self
-                        .analyzed_wren_mdl
-                        .wren_mdl
+                        .analyzed_analytics_mdl
+                        .analytics_mdl
                         .get_model(table_scan.table_name.table())
                     {
                         scope_mut.add_visited_dataset(
@@ -225,13 +225,13 @@ impl ModelAnalyzeRule {
                     Arc::unwrap_or_clone(Arc::clone(&subquery_alias.input))
                 {
                     if belong_to_mdl(
-                        &self.analyzed_wren_mdl.wren_mdl(),
+                        &self.analyzed_analytics_mdl.analytics_mdl(),
                         table_scan.table_name.clone(),
                         Arc::clone(&self.session_state),
                     ) {
                         if let Some(model) = self
-                            .analyzed_wren_mdl
-                            .wren_mdl
+                            .analyzed_analytics_mdl
+                            .analytics_mdl
                             .get_model(table_scan.table_name.table())
                         {
                             scope_mut.add_visited_dataset(
@@ -281,12 +281,12 @@ impl ModelAnalyzeRule {
             }) => {
                 // only collect the required column if the relation belongs to the mdl
                 if belong_to_mdl(
-                    &self.analyzed_wren_mdl.wren_mdl(),
+                    &self.analyzed_analytics_mdl.analytics_mdl(),
                     relation.clone(),
                     Arc::clone(&self.session_state),
                 ) && self
-                    .analyzed_wren_mdl
-                    .wren_mdl()
+                    .analyzed_analytics_mdl
+                    .analytics_mdl()
                     .get_view(relation.table())
                     .is_none()
                 {
@@ -300,7 +300,7 @@ impl ModelAnalyzeRule {
             // It is possible that the column is a rebase column from the aggregation or join
             // e.g. Column {
             //         relation: None,
-            //         name: "min(wrenai.public.order_items_model.price)",
+            //         name: "min(analyticsai.public.order_items_model.price)",
             //     },
             Expr::Column(Column { relation: None, .. }) => {
                 // do nothing
@@ -363,7 +363,7 @@ impl ModelAnalyzeRule {
         match plan {
             LogicalPlan::SubqueryAlias(SubqueryAlias { input, alias, .. }) => {
                 // Because the bottom-up transformation is used, the table_scan is already transformed
-                // to the ModelPlanNode before the SubqueryAlias. We should check the patten of Wren-generated model plan like:
+                // to the ModelPlanNode before the SubqueryAlias. We should check the patten of Analytics-generated model plan like:
                 //      SubqueryAlias -> SubqueryAlias -> Extension -> ModelPlanNode
                 // to get the correct required columns
                 match Arc::unwrap_or_clone(Arc::clone(&input)) {
@@ -377,7 +377,7 @@ impl ModelAnalyzeRule {
                     LogicalPlan::TableScan(table_scan) => {
                         let model_plan = self
                             .analyze_table_scan(
-                                Arc::clone(&self.analyzed_wren_mdl),
+                                Arc::clone(&self.analyzed_analytics_mdl),
                                 Arc::clone(&self.session_state),
                                 table_scan,
                                 Some(alias.clone()),
@@ -395,7 +395,7 @@ impl ModelAnalyzeRule {
                 }
             }
             LogicalPlan::TableScan(table_scan) => self.analyze_table_scan(
-                Arc::clone(&self.analyzed_wren_mdl),
+                Arc::clone(&self.analyzed_analytics_mdl),
                 Arc::clone(&self.session_state),
                 table_scan,
                 None,
@@ -406,7 +406,7 @@ impl ModelAnalyzeRule {
                 let left = match Arc::unwrap_or_clone(join.left) {
                     LogicalPlan::TableScan(table_scan) => {
                         self.analyze_table_scan(
-                            Arc::clone(&self.analyzed_wren_mdl),
+                            Arc::clone(&self.analyzed_analytics_mdl),
                             Arc::clone(&self.session_state),
                             table_scan,
                             None,
@@ -421,7 +421,7 @@ impl ModelAnalyzeRule {
                 let right = match Arc::unwrap_or_clone(join.right) {
                     LogicalPlan::TableScan(table_scan) => {
                         self.analyze_table_scan(
-                            Arc::clone(&self.analyzed_wren_mdl),
+                            Arc::clone(&self.analyzed_analytics_mdl),
                             Arc::clone(&self.session_state),
                             table_scan,
                             None,
@@ -449,7 +449,7 @@ impl ModelAnalyzeRule {
 
     fn analyze_table_scan(
         &self,
-        analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state_ref: SessionStateRef,
         table_scan: TableScan,
         alias: Option<TableReference>,
@@ -457,12 +457,12 @@ impl ModelAnalyzeRule {
         current_scope_id: ScopeId,
     ) -> Result<Transformed<LogicalPlan>> {
         if belong_to_mdl(
-            &analyzed_wren_mdl.wren_mdl(),
+            &analyzed_analytics_mdl.analytics_mdl(),
             table_scan.table_name.clone(),
             Arc::clone(&session_state_ref),
         ) {
             let table_name = table_scan.table_name.table();
-            if let Some(model) = analyzed_wren_mdl.wren_mdl.get_model(table_name) {
+            if let Some(model) = analyzed_analytics_mdl.analytics_mdl.get_model(table_name) {
                 let table_ref = alias.unwrap_or(table_scan.table_name.clone());
                 let field: Vec<Expr> = if let Some(used_columns) =
                     scope_manager.try_get_required_columns(current_scope_id, &table_ref)
@@ -487,7 +487,7 @@ impl ModelAnalyzeRule {
                         Arc::clone(&model),
                         field,
                         Some(LogicalPlan::TableScan(table_scan.clone())),
-                        Arc::clone(&self.analyzed_wren_mdl),
+                        Arc::clone(&self.analyzed_analytics_mdl),
                         Arc::clone(&self.session_state),
                         Arc::clone(&self.properties),
                     )?),
@@ -505,7 +505,7 @@ impl ModelAnalyzeRule {
     }
 
     /// Because the bottom-up transformation is used, the table_scan is already transformed
-    /// to the ModelPlanNode before the SubqueryAlias. We should check the patten of Wren-generated model plan like:
+    /// to the ModelPlanNode before the SubqueryAlias. We should check the patten of Analytics-generated model plan like:
     ///      SubqueryAlias -> SubqueryAlias -> Extension -> ModelPlanNode
     /// to get the correct required columns
     fn analyze_subquery_alias_model(
@@ -521,8 +521,8 @@ impl ModelAnalyzeRule {
         {
             if let Some(model_node) = node.as_any().downcast_ref::<ModelPlanNode>() {
                 if let Some(model) = self
-                    .analyzed_wren_mdl
-                    .wren_mdl()
+                    .analyzed_analytics_mdl
+                    .analytics_mdl()
                     .get_model(model_node.plan_name())
                 {
                     let field: Vec<Expr> = if let Some(used_columns) =
@@ -547,7 +547,7 @@ impl ModelAnalyzeRule {
                             Arc::clone(&model),
                             field,
                             None,
-                            Arc::clone(&self.analyzed_wren_mdl),
+                            Arc::clone(&self.analyzed_analytics_mdl),
                             Arc::clone(&self.session_state),
                             Arc::clone(&self.properties),
                         )?),
@@ -557,7 +557,7 @@ impl ModelAnalyzeRule {
                     Ok(Transformed::yes(subquery))
                 } else {
                     internal_err!(
-                        "Model {} not found in the WrenMDL",
+                        "Model {} not found in the AnalyticsMDL",
                         model_node.plan_name()
                     )
                 }
@@ -571,18 +571,18 @@ impl ModelAnalyzeRule {
         }
     }
 
-    /// Remove the catalog and schema prefix of Wren for the column and refresh the schema.
-    /// The plan created by DataFusion is always with the Wren prefix for the column name.
-    /// Something like "wrenai.public.order_items_model.price". However, the model plan will be rewritten to a subquery alias
+    /// Remove the catalog and schema prefix of Analytics for the column and refresh the schema.
+    /// The plan created by DataFusion is always with the Analytics prefix for the column name.
+    /// Something like "analyticsai.public.order_items_model.price". However, the model plan will be rewritten to a subquery alias
     /// The catalog and schema are invalid for the subquery alias. We should remove the prefix and refresh the schema.
-    fn remove_wren_catalog_schema_prefix_and_refresh_schema(
+    fn remove_analytics_catalog_schema_prefix_and_refresh_schema(
         &self,
         plan: LogicalPlan,
     ) -> Result<Transformed<LogicalPlan>> {
         match plan {
             LogicalPlan::SubqueryAlias(SubqueryAlias { input, alias, .. }) => {
                 let subquery = self
-                    .remove_wren_catalog_schema_prefix_and_refresh_schema(
+                    .remove_analytics_catalog_schema_prefix_and_refresh_schema(
                         Arc::unwrap_or_clone(input),
                     )?
                     .data;
@@ -596,7 +596,7 @@ impl ModelAnalyzeRule {
                 spans,
             }) => {
                 let subquery = self
-                    .remove_wren_catalog_schema_prefix_and_refresh_schema(
+                    .remove_analytics_catalog_schema_prefix_and_refresh_schema(
                         Arc::unwrap_or_clone(subquery),
                     )?
                     .data;
@@ -714,7 +714,7 @@ impl ModelAnalyzeRule {
                     Ok(self.rewrite_column_qualifier(relation, name, alias_model))
                 } else {
                     let name = name.replace(
-                        self.analyzed_wren_mdl.wren_mdl().catalog_schema_prefix(),
+                        self.analyzed_analytics_mdl.analytics_mdl().catalog_schema_prefix(),
                         "",
                     );
                     let ident = ident(&name);
@@ -749,21 +749,21 @@ impl ModelAnalyzeRule {
         alias_model: &str,
     ) -> Transformed<Expr> {
         if belong_to_mdl(
-            &self.analyzed_wren_mdl.wren_mdl(),
+            &self.analyzed_analytics_mdl.analytics_mdl(),
             relation.clone(),
             self.session_state(),
         ) {
             if self
-                .analyzed_wren_mdl
-                .wren_mdl()
+                .analyzed_analytics_mdl
+                .analytics_mdl()
                 .get_model(relation.table())
                 .is_some()
             {
                 Transformed::yes(col(format!("{}.{}", alias_model, quoted(&name))))
             } else {
-                // handle Wren View
+                // handle Analytics View
                 let name = name.replace(
-                    self.analyzed_wren_mdl.wren_mdl().catalog_schema_prefix(),
+                    self.analyzed_analytics_mdl.analytics_mdl().catalog_schema_prefix(),
                     "",
                 );
                 Transformed::yes(Expr::Column(Column::new(

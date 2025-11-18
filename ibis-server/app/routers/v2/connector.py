@@ -11,7 +11,7 @@ from app.dependencies import (
     X_CACHE_HIT,
     X_CACHE_OVERRIDE,
     X_CACHE_OVERRIDE_AT,
-    get_wren_headers,
+    get_analytics_headers,
     verify_query_dto,
 )
 from app.mdl.java_engine import JavaEngineConnector
@@ -63,7 +63,7 @@ def get_query_cache_manager(request: Request) -> QueryCacheManager:
     description="query the specified data source",
 )
 async def query(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     data_source: DataSource,
     dto: QueryDTO,
     dry_run: Annotated[
@@ -213,7 +213,7 @@ async def query(
     description="validate the specified rule",
 )
 async def validate(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     data_source: DataSource,
     rule_name: str,
     dto: ValidateDTO,
@@ -259,7 +259,7 @@ async def validate(
 async def get_table_list(
     data_source: DataSource,
     dto: MetadataDTO,
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
 ) -> list[Table]:
     span_name = f"v2_metadata_tables_{data_source}"
     with tracer.start_as_current_span(
@@ -282,7 +282,7 @@ async def get_table_list(
 async def get_constraints(
     data_source: DataSource,
     dto: MetadataDTO,
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
 ) -> list[Constraint]:
     span_name = f"v2_metadata_constraints_{data_source}"
     with tracer.start_as_current_span(
@@ -304,7 +304,7 @@ async def get_constraints(
 async def get_db_version(
     data_source: DataSource,
     dto: MetadataDTO,
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
 ) -> str:
     connection_info = data_source.get_connection_info(
         dto.connection_info, dict(headers)
@@ -313,9 +313,9 @@ async def get_db_version(
     return await execute_get_version_with_timeout(metadata)
 
 
-@router.post("/dry-plan", deprecated=True, description="get the planned WrenSQL")
+@router.post("/dry-plan", deprecated=True, description="get the planned AnalyticsSQL")
 async def dry_plan(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     dto: DryPlanDTO,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
     is_fallback: bool | None = None,
@@ -340,7 +340,7 @@ async def dry_plan(
     description="get the dialect SQL for the specified data source",
 )
 async def dry_plan_for_data_source(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     data_source: DataSource,
     dto: DryPlanDTO,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
@@ -371,7 +371,7 @@ async def dry_plan_for_data_source(
 async def model_substitute(
     data_source: DataSource,
     dto: TranspileDTO,
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
     is_fallback: bool | None = None,
 ) -> str:

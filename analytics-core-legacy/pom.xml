@@ -8,13 +8,13 @@
         <version>279</version>
     </parent>
 
-    <groupId>io.wren</groupId>
-    <artifactId>wren-root</artifactId>
+    <groupId>io.analytics</groupId>
+    <artifactId>analytics-root</artifactId>
     <version>0.21.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>WrenEngine</name>
-    <description>WrenEngine</description>
+    <name>AnalyticsEngine</name>
+    <description>AnalyticsEngine</description>
 
     <inceptionYear>2022</inceptionYear>
 
@@ -27,11 +27,11 @@
     </licenses>
 
     <modules>
+        <module>analytics-base</module>
+        <module>analytics-main</module>
+        <module>analytics-server</module>
+        <module>analytics-tests</module>
         <module>trino-parser</module>
-        <module>wren-base</module>
-        <module>wren-main</module>
-        <module>wren-server</module>
-        <module>wren-tests</module>
     </modules>
 
     <scm>
@@ -274,6 +274,42 @@
             </dependency>
 
             <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>analytics-base</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>analytics-main</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>analytics-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>analytics-tests</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>analytics-validation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.analytics</groupId>
+                <artifactId>trino-parser</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-api</artifactId>
                 <version>1.47.0</version>
@@ -283,42 +319,6 @@
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-sdk</artifactId>
                 <version>1.47.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>trino-parser</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>wren-base</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>wren-main</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>wren-server</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>wren-tests</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.wren</groupId>
-                <artifactId>wren-validation</artifactId>
-                <version>${project.version}</version>
             </dependency>
 
             <dependency>

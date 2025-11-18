@@ -26,11 +26,11 @@ use clap::Parser;
 use futures::stream::StreamExt;
 use log::info;
 use sqllogictest::strict_column_validator;
-use wren_sqllogictest::{engine::DataFusion, TestContext};
+use analytics_sqllogictest::{engine::DataFusion, TestContext};
 
 use datafusion::common::runtime::SpawnedTask;
 use datafusion::common::{exec_err, DataFusionError, Result};
-use wren_sqllogictest::engine::utils::read_dir_recursive;
+use analytics_sqllogictest::engine::utils::read_dir_recursive;
 
 const TEST_DIRECTORY: &str = "test_files/";
 

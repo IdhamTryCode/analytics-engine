@@ -61,7 +61,7 @@ use datafusion::logical_expr::{
 /// It's a fork from [datafusion::logical_expr::type_coercion] but we customize some behaviors:
 /// - Only apply type coercion for the temporal type when binary operators, case-when clause and the between clause. (To improve the BigQuery usage)
 ///
-/// The purpose of the Wren engine is to generate the SQL to be executed by the other databases. So we can leave most type coercion issues for the database engine.
+/// The purpose of the Analytics engine is to generate the SQL to be executed by the other databases. So we can leave most type coercion issues for the database engine.
 /// And then, we can simplify the type coercion rules to only apply to the relevant expressions.
 /// To avoid generating the SQL like `SELECT CAST(int_col as BIGINT) = 1 FROM t1` which has some redundant casting.
 #[derive(Default, Debug)]
@@ -93,7 +93,7 @@ fn coerce_output(plan: LogicalPlan, config: &ConfigOptions) -> Result<LogicalPla
 
 impl AnalyzerRule for TypeCoercion {
     fn name(&self) -> &str {
-        "wren_type_coercion"
+        "analytics_type_coercion"
     }
 
     fn analyze(&self, plan: LogicalPlan, config: &ConfigOptions) -> Result<LogicalPlan> {

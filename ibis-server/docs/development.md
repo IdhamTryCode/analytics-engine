@@ -62,8 +62,8 @@ To start the server:
 
 ### Environment Variables
 
-- `ANALYTICS_ENGINE_ENDPOINT`: The endpoint of the Wren Java engine
-- `WREN_NUM_WORKERS`: The number of gunicoron workers
+- `ANALYTICS_ENGINE_ENDPOINT`: The endpoint of the Analytics Java engine
+- `ANALYTICS_NUM_WORKERS`: The number of gunicoron workers
 
 ### OpenTelemetry Envrionment Variables
 - `OTLP_ENABLED`: Enable the tracing for Ibis Server.
@@ -109,7 +109,7 @@ If you encounter this error, you can add the `TrustServerCertificate` parameter 
 
 ### No driver for MySQL Server
 
-If you want run tests related to MySQL Server or connect to MySQL through Wren Engine, you need to install the MySQL client libraries (e.g. `libmysqlclient`) by yourself.
+If you want run tests related to MySQL Server or connect to MySQL through Analytics Engine, you need to install the MySQL client libraries (e.g. `libmysqlclient`) by yourself.
 - For linux, you can install `libmysqlclient-dev`. By the way, there are some different names for different linux versions. You should take care about it.
 - For Mac, you can install `mysql-connector-c`
 - For Windows, you can dowanload [the libraries](https://dev.mysql.com/downloads/c-api)

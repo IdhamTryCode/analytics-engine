@@ -10,7 +10,7 @@ use crate::logical_plan::utils::{
 use crate::mdl::context::SessionPropertiesRef;
 use crate::mdl::manifest::Model;
 use crate::mdl::utils::quoted;
-use crate::mdl::{AnalyzedWrenMDL, SessionStateRef};
+use crate::mdl::{AnalyzedAnalyticsMDL, SessionStateRef};
 use crate::DataFusionError;
 use datafusion::common::alias::AliasGenerator;
 use datafusion::common::config::ConfigOptions;
@@ -29,19 +29,19 @@ pub const SOURCE_ALIAS: &str = "__source";
 
 /// [ModelGenerationRule] is responsible for generating the model plan node.
 pub struct ModelGenerationRule {
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state: SessionStateRef,
     properties: SessionPropertiesRef,
 }
 
 impl ModelGenerationRule {
     pub fn new(
-        mdl: Arc<AnalyzedWrenMDL>,
+        mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state: SessionStateRef,
         properties: SessionPropertiesRef,
     ) -> Self {
         Self {
-            analyzed_wren_mdl: mdl,
+            analyzed_analytics_mdl: mdl,
             session_state,
             properties,
         }
@@ -59,7 +59,7 @@ impl ModelGenerationRule {
                 {
                     let (source_plan, alias) = model_plan.relation_chain.clone().plan(
                         ModelGenerationRule::new(
-                            Arc::clone(&self.analyzed_wren_mdl),
+                            Arc::clone(&self.analyzed_analytics_mdl),
                             Arc::clone(&self.session_state),
                             Arc::clone(&self.properties),
                         ),
@@ -133,8 +133,8 @@ impl ModelGenerationRule {
                 {
                     let model: Arc<Model> = Arc::clone(
                         &self
-                            .analyzed_wren_mdl
-                            .wren_mdl()
+                            .analyzed_analytics_mdl
+                            .analytics_mdl()
                             .get_model(&model_plan.model_name)
                             .expect("Model not found"),
                     );
@@ -150,7 +150,7 @@ impl ModelGenerationRule {
                                 TableReference::from(model.table_reference()),
                                 create_remote_table_source(
                                     Arc::clone(&model),
-                                    &self.analyzed_wren_mdl.wren_mdl(),
+                                    &self.analyzed_analytics_mdl.analytics_mdl(),
                                     Arc::clone(&self.session_state),
                                 )?,
                                 None,
@@ -169,7 +169,7 @@ impl ModelGenerationRule {
                                 TableReference::from(model.table_reference()),
                                 create_remote_table_source(
                                     Arc::clone(&model),
-                                    &self.analyzed_wren_mdl.wren_mdl(),
+                                    &self.analyzed_analytics_mdl.analytics_mdl(),
                                     Arc::clone(&self.session_state))?,
                                 None,
                             )?
@@ -195,7 +195,7 @@ impl ModelGenerationRule {
                     let (source_plan, plan_alias) =
                         calculation_plan.relation_chain.clone().plan(
                             ModelGenerationRule::new(
-                                Arc::clone(&self.analyzed_wren_mdl),
+                                Arc::clone(&self.analyzed_analytics_mdl),
                                 Arc::clone(&self.session_state),
                                 Arc::clone(&self.properties),
                             ),

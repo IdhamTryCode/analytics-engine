@@ -9,7 +9,7 @@ from app.mdl.rewriter import EmbeddedEngineRewriter
 from app.model import ConnectionInfo
 from app.model.connector import Connector
 from app.model.data_source import DataSource
-from app.model.error import ErrorCode, WrenError
+from app.model.error import ErrorCode, AnalyticsError
 from app.util import to_json
 
 
@@ -74,7 +74,7 @@ class Task:
         self.task_id: str = task_id or str(uuid.uuid4())
         self.context: Context = context
         self.properties: dict = self._lowrcase_properties(properties)
-        self.wren_sql: str | None = None
+        self.analytics_sql: str | None = None
         self.planned_sql: str | None = None
         self.dialect_sql: str | None = None
         self.results: pa.Table | None = None
@@ -90,14 +90,14 @@ class Task:
         return f"Task(id={self.task_id}, context={self.context})"
 
     def plan(self, input_sql):
-        """Plan input Wren SQL based on the MDL to the planned SQL and transpiled dialect SQL."""
-        self.wren_sql = input_sql
+        """Plan input Analytics SQL based on the MDL to the planned SQL and transpiled dialect SQL."""
+        self.analytics_sql = input_sql
         self.manifest = self._extract_manifest(
-            self.context.manifest_base64, self.wren_sql
+            self.context.manifest_base64, self.analytics_sql
         )
 
         self.planned_sql = self.context.rewriter.rewrite_sync(
-            self.manifest, self.wren_sql, self.properties
+            self.manifest, self.analytics_sql, self.properties
         )
 
         read = self._get_read_dialect()
@@ -136,7 +136,7 @@ class Task:
     def dry_run(self):
         """Perform a dry run of the dialect SQL without executing it."""
         if self.dialect_sql is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 "Dialect SQL is not set. Call transpile() first.",
             )
@@ -151,12 +151,12 @@ class Task:
             The maximum number of rows to return. If None, returns all rows.
         """
         if self.context.connection_info is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 "Connection info is not set. Cannot execute without connection info.",
             )
         if self.dialect_sql is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 "Dialect SQL is not set. Call transpile() first.",
             )
@@ -166,7 +166,7 @@ class Task:
     def formatted_result(self):
         """Get the formatted result of the executed task."""
         if self.results is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 "Results are not set. Call execute() first.",
             )

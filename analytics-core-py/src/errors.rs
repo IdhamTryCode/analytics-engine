@@ -5,7 +5,7 @@ use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 use analytics_core::DataFusionError;
-use analytics_core::WrenError;
+use analytics_core::AnalyticsError;
 
 #[derive(Error, Debug, PartialEq)]
 #[error("{message}")]
@@ -55,7 +55,7 @@ impl From<DataFusionError> for CoreError {
     fn from(err: DataFusionError) -> Self {
         if let DataFusionError::Context(_, ee) = &err {
             if let DataFusionError::External(we) = ee.as_ref() {
-                if let Some(we) = we.downcast_ref::<WrenError>() {
+                if let Some(we) = we.downcast_ref::<AnalyticsError>() {
                     return CoreError::new(we.to_string().as_str());
                 }
             }

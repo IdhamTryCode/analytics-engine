@@ -32,7 +32,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # Set Defaults
 COMMAND=
 BENCHMARK=all
-WREN_DIR=${WREN_DIR:-$SCRIPT_DIR/..}
+ANALYTICS_DIR=${ANALYTICS_DIR:-$SCRIPT_DIR/..}
 CARGO_COMMAND=${CARGO_COMMAND:-"cargo run --release"}
 VIRTUAL_ENV=${VIRTUAL_ENV:-$SCRIPT_DIR/venv}
 
@@ -49,7 +49,7 @@ $0 venv
 Examples:
 **********
 # Run the 'tpch' benchmark on the datafusion checkout in /source/datafusion
-WREN_DIR=/source/datafusion ./bench.sh run tpch
+ANALYTICS_DIR=/source/datafusion ./bench.sh run tpch
 
 **********
 * Commands
@@ -68,7 +68,7 @@ tpch:                   TPCH inspired benchmark on Scale Factor (SF) 1 (~1GB), s
 * Supported Configuration (Environment Variables)
 **********
 CARGO_COMMAND       command that runs the benchmark binary
-WREN_DIR      directory to use (default $WREN_DIR)
+ANALYTICS_DIR      directory to use (default $ANALYTICS_DIR)
 RESULTS_NAME        folder where the benchmark files are stored
 VENV_PATH           Python venv to use for compare and venv commands (default ./venv, override by <your-venv>/bin/activate)
 "
@@ -112,7 +112,7 @@ main() {
         run)
             # Parse positional parameters
             BENCHMARK=${ARG2:-"${BENCHMARK}"}
-            BRANCH_NAME=$(cd "${WREN_DIR}" && git rev-parse --abbrev-ref HEAD)
+            BRANCH_NAME=$(cd "${ANALYTICS_DIR}" && git rev-parse --abbrev-ref HEAD)
             BRANCH_NAME=${BRANCH_NAME//\//_} # mind blowing syntax to replace / with _
             RESULTS_NAME=${RESULTS_NAME:-"${BRANCH_NAME}"}
             RESULTS_DIR=${RESULTS_DIR:-"$SCRIPT_DIR/results/$RESULTS_NAME"}
@@ -122,28 +122,28 @@ main() {
             QUERY_ARG=$([ -n "$QUERY" ] && echo "--query ${QUERY}" || echo "")
 
             echo "***************************"
-            echo "Wren Benchmark Script"
+            echo "Analytics Benchmark Script"
             echo "COMMAND: ${COMMAND}"
             echo "BENCHMARK: ${BENCHMARK}"
-            echo "WREN_DIR: ${WREN_DIR}"
+            echo "ANALYTICS_DIR: ${ANALYTICS_DIR}"
             echo "BRANCH_NAME: ${BRANCH_NAME}"
             echo "RESULTS_DIR: ${RESULTS_DIR}"
             echo "CARGO_COMMAND: ${CARGO_COMMAND}"
             echo "***************************"
 
             # navigate to the appropriate directory
-            pushd "${WREN_DIR}/benchmarks" > /dev/null
+            pushd "${ANALYTICS_DIR}/benchmarks" > /dev/null
             mkdir -p "${RESULTS_DIR}"
             case "$BENCHMARK" in
                 all)
                     run_tpch "1"
-                    run_wren
+                    run_analytics
                     ;;
                 tpch)
                     run_tpch "1"
                     ;;
-                wren)
-                    run_wren
+                analytics)
+                    run_analytics
                     ;;
                 *)
                     echo "Error: unknown benchmark '$BENCHMARK' for run"
@@ -178,12 +178,12 @@ run_tpch() {
     $CARGO_COMMAND --bin tpch -- benchmark -i 10 -o "${RESULTS_FILE}" ${QUERY_ARG}
 }
 
-# Runs wren benchmark
-run_wren() {
-    RESULTS_FILE="${RESULTS_DIR}/wren.json"
+# Runs analytics benchmark
+run_analytics() {
+    RESULTS_FILE="${RESULTS_DIR}/analytics.json"
     echo "RESULTS_FILE: ${RESULTS_FILE}"
-    echo "Running wren benchmark..."
-    $CARGO_COMMAND --bin wren -- benchmark -i 10 -o "${RESULTS_FILE}" ${QUERY_ARG}
+    echo "Running analytics benchmark..."
+    $CARGO_COMMAND --bin analytics -- benchmark -i 10 -o "${RESULTS_FILE}" ${QUERY_ARG}
 }
 
 

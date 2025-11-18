@@ -7,7 +7,7 @@ from testcontainers.postgres import PostgresContainer
 base_url = "/v2/connector/postgres"
 
 manifest = {
-    "catalog": "wrenai",
+    "catalog": "analyticsai",
     "schema": "public",
     "models": [
         {

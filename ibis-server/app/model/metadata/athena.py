@@ -9,7 +9,7 @@ from app.model.data_source import DataSource
 from app.model.metadata.dto import (
     Column,
     Constraint,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -18,36 +18,36 @@ from app.model.metadata.metadata import Metadata
 # Athena-specific type mapping
 ATHENA_TYPE_MAPPING = {
     # String Types (ignore Binary and Spatial Types for now)
-    "char": RustWrenEngineColumnType.CHAR,
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "tinytext": RustWrenEngineColumnType.TEXT,
-    "text": RustWrenEngineColumnType.TEXT,
-    "mediumtext": RustWrenEngineColumnType.TEXT,
-    "longtext": RustWrenEngineColumnType.TEXT,
-    "enum": RustWrenEngineColumnType.VARCHAR,
-    "set": RustWrenEngineColumnType.VARCHAR,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "tinytext": RustAnalyticsEngineColumnType.TEXT,
+    "text": RustAnalyticsEngineColumnType.TEXT,
+    "mediumtext": RustAnalyticsEngineColumnType.TEXT,
+    "longtext": RustAnalyticsEngineColumnType.TEXT,
+    "enum": RustAnalyticsEngineColumnType.VARCHAR,
+    "set": RustAnalyticsEngineColumnType.VARCHAR,
     # Integer Types
-    "bit": RustWrenEngineColumnType.TINYINT,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "mediumint": RustWrenEngineColumnType.INTEGER,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "integer": RustWrenEngineColumnType.INTEGER,
-    "bigint": RustWrenEngineColumnType.BIGINT,
+    "bit": RustAnalyticsEngineColumnType.TINYINT,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "mediumint": RustAnalyticsEngineColumnType.INTEGER,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "integer": RustAnalyticsEngineColumnType.INTEGER,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
     # Boolean Types
-    "bool": RustWrenEngineColumnType.BOOL,
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "bool": RustAnalyticsEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Decimal Types
-    "float": RustWrenEngineColumnType.FLOAT4,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "numeric": RustWrenEngineColumnType.NUMERIC,
+    "float": RustAnalyticsEngineColumnType.FLOAT4,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "numeric": RustAnalyticsEngineColumnType.NUMERIC,
     # Date/Time Types
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMPTZ,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
     # JSON Type
-    "json": RustWrenEngineColumnType.JSON,
+    "json": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -137,24 +137,24 @@ class AthenaMetadata(Metadata):
     def _format_athena_compact_table_name(self, schema: str, table: str) -> str:
         return f"{schema}.{table}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform Athena data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform Athena data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The Athena data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Remove parameter specifications like VARCHAR(255) -> VARCHAR
         normalized_type = re.sub(r"\(.*\)", "", data_type).strip().lower()
 
         # Use the module-level mapping table
         mapped_type = ATHENA_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Athena data type: {data_type}")
 
         return mapped_type

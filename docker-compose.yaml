@@ -26,9 +26,9 @@ services:
       dockerfile: docker/Dockerfile.local
       args:
         # Get version from pom.xml: ./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout
-        # Or set via: WREN_VERSION=0.21.3-SNAPSHOT docker-compose build
-        WREN_VERSION: ${WREN_VERSION:-0.21.3-SNAPSHOT}
-      # JAR file should be at: wren-server/target/wren-server-${WREN_VERSION}-executable.jar
+        # Or set via: ANALYTICS_VERSION=0.21.3-SNAPSHOT docker-compose build
+        ANALYTICS_VERSION: ${ANALYTICS_VERSION:-0.21.3-SNAPSHOT}
+      # JAR file should be at: analytics-server/target/analytics-server-${ANALYTICS_VERSION}-executable.jar
     # Uncomment below to use pre-built image from registry
     # image: ghcr.io/canner/analytics-engine:latest
     image: analytics-engine:local

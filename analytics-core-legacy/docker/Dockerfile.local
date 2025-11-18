@@ -10,15 +10,15 @@ RUN \
     apt update && \
     apt -y install postgresql-client-13
 
-ARG WREN_VERSION
-ENV ENV_WREN_VERSION=${WREN_VERSION}
-ENV WREN_JAR=wren-server-${ENV_WREN_VERSION}-executable.jar
-# Copy JAR from wren-server/target/ (build context is analytics-core-legacy root)
-COPY wren-server/target/${WREN_JAR} ./
+ARG ANALYTICS_VERSION
+ENV ENV_ANALYTICS_VERSION=${ANALYTICS_VERSION}
+ENV ANALYTICS_JAR=analytics-server-${ENV_ANALYTICS_VERSION}-executable.jar
+# Copy JAR from analytics-server/target/ (build context is analytics-core-legacy root)
+COPY analytics-server/target/${ANALYTICS_JAR} ./
 
 # Copy entrypoint.sh from docker/ directory
 COPY docker/entrypoint.sh ./
 RUN sed -i 's/\r$//' ./entrypoint.sh && chmod +x ./entrypoint.sh
 
-CMD ./entrypoint.sh ${WREN_JAR} ${MAX_HEAP_SIZE} ${MIN_HEAP_SIZE}
+CMD ./entrypoint.sh ${ANALYTICS_JAR} ${MAX_HEAP_SIZE} ${MIN_HEAP_SIZE}
 

@@ -92,10 +92,10 @@ Overall: -5.23% change (faster)
 
 ### Custom Benchmark Queries
 
-Create custom benchmark queries in `analytics-core/benchmarks/src/wren/`:
+Create custom benchmark queries in `analytics-core/benchmarks/src/analytics/`:
 
 ```rust
-// src/wren/custom.rs
+// src/analytics/custom.rs
 pub fn custom_query_1() -> String {
     r#"
     SELECT ...
@@ -109,7 +109,7 @@ pub fn custom_query_1() -> String {
 Use the profiler to identify bottlenecks:
 
 ```rust
-use wren_benchmarks::util::profiling::Profiler;
+use analytics_benchmarks::util::profiling::Profiler;
 
 let mut profiler = Profiler::new();
 // ... do work ...

@@ -10,17 +10,17 @@ cd ${SCRIPT_DIR}
 
 # Move to the root directory to run maven for current version.
 pushd ${SOURCE_DIR}
-WREN_VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
+ANALYTICS_VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
 popd
 
 WORK_DIR="$(mktemp -d)"
-cp ${SOURCE_DIR}wren-server/target/wren-server-${WREN_VERSION}-executable.jar ${WORK_DIR}
+cp ${SOURCE_DIR}analytics-server/target/analytics-server-${ANALYTICS_VERSION}-executable.jar ${WORK_DIR}
 cp ./entrypoint.sh ${WORK_DIR}
 
-CONTAINER="analytics-engine:${WREN_VERSION}"
+CONTAINER="analytics-engine:${ANALYTICS_VERSION}"
 
-docker build ${WORK_DIR} --pull --platform linux/amd64 -f Dockerfile -t ${CONTAINER}-amd64 --build-arg "WREN_VERSION=${WREN_VERSION}"
-docker build ${WORK_DIR} --pull --platform linux/arm64 -f Dockerfile -t ${CONTAINER}-arm64 --build-arg "WREN_VERSION=${WREN_VERSION}"
+docker build ${WORK_DIR} --pull --platform linux/amd64 -f Dockerfile -t ${CONTAINER}-amd64 --build-arg "ANALYTICS_VERSION=${ANALYTICS_VERSION}"
+docker build ${WORK_DIR} --pull --platform linux/arm64 -f Dockerfile -t ${CONTAINER}-arm64 --build-arg "ANALYTICS_VERSION=${ANALYTICS_VERSION}"
 
 rm -r ${WORK_DIR}
 

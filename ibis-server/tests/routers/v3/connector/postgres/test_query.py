@@ -3,12 +3,12 @@ import base64
 import orjson
 import pytest
 
-from app.dependencies import X_WREN_FALLBACK_DISABLE, X_WREN_VARIABLE_PREFIX
-from app.model.data_source import X_WREN_DB_STATEMENT_TIMEOUT
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE, X_ANALYTICS_VARIABLE_PREFIX
+from app.model.data_source import X_ANALYTICS_DB_STATEMENT_TIMEOUT
 from tests.routers.v3.connector.postgres.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
@@ -144,7 +144,7 @@ async def test_query(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 200
@@ -181,10 +181,10 @@ async def test_query(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 0",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 0",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -212,7 +212,7 @@ async def test_query_with_cache(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
 
@@ -226,7 +226,7 @@ async def test_query_with_cache(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
 
@@ -247,7 +247,7 @@ async def test_query_with_cache_override(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response1.status_code == 200
@@ -258,7 +258,7 @@ async def test_query_with_cache_override(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response2.status_code == 200
@@ -274,7 +274,7 @@ async def test_query_with_connection_url(client, manifest_str, connection_url):
         json={
             "connectionInfo": {"connectionUrl": connection_url},
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 200
@@ -293,7 +293,7 @@ async def test_query_with_connection_url_and_cache_enable(
         json={
             "connectionInfo": {"connectionUrl": connection_url},
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response1.status_code == 200
@@ -306,7 +306,7 @@ async def test_query_with_connection_url_and_cache_enable(
         json={
             "connectionInfo": {"connectionUrl": connection_url},
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response2.status_code == 200
@@ -327,7 +327,7 @@ async def test_query_with_connection_url_and_cache_override(
         json={
             "connectionInfo": {"connectionUrl": connection_url},
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response1.status_code == 200
@@ -338,7 +338,7 @@ async def test_query_with_connection_url_and_cache_override(
         json={
             "connectionInfo": {"connectionUrl": connection_url},
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response2.status_code == 200
@@ -355,7 +355,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders",
+            "sql": "SELECT * FROM analytics.public.orders",
         },
     )
     assert response.status_code == 200
@@ -368,7 +368,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 10",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 10",
         },
     )
     assert response.status_code == 200
@@ -382,7 +382,7 @@ async def test_query_with_invalid_manifest_str(client, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": "xxx",
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -393,7 +393,7 @@ async def test_query_without_manifest(client, connection_info):
         url=f"{base_url}/query",
         json={
             "connectionInfo": connection_info,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -422,7 +422,7 @@ async def test_query_without_connection_info(client, manifest_str):
         url=f"{base_url}/query",
         json={
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -440,7 +440,7 @@ async def test_query_with_dry_run(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 204
@@ -468,7 +468,7 @@ async def test_query_to_many_calculation(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT sum_totalprice FROM wren.public.customer limit 1",
+            "sql": "SELECT sum_totalprice FROM analytics.public.customer limit 1",
         },
     )
     assert response.status_code == 200
@@ -482,7 +482,7 @@ async def test_query_to_many_calculation(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT sum_totalprice FROM wren.public.customer where c_name = 'Customer#000000001' limit 1",
+            "sql": "SELECT sum_totalprice FROM analytics.public.customer where c_name = 'Customer#000000001' limit 1",
         },
     )
     assert response.status_code == 200
@@ -496,7 +496,7 @@ async def test_query_to_many_calculation(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT c_name, sum_totalprice FROM wren.public.customer limit 1",
+            "sql": "SELECT c_name, sum_totalprice FROM analytics.public.customer limit 1",
         },
     )
     assert response.status_code == 200
@@ -510,7 +510,7 @@ async def test_query_to_many_calculation(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT c_custkey, sum_totalprice FROM wren.public.customer limit 1",
+            "sql": "SELECT c_custkey, sum_totalprice FROM analytics.public.customer limit 1",
         },
     )
     assert response.status_code == 200
@@ -527,7 +527,7 @@ async def test_query_with_keyword_filter(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT count(*) FILTER(WHERE o_orderkey != NULL) FROM wren.public.orders",
+            "sql": "SELECT count(*) FILTER(WHERE o_orderkey != NULL) FROM analytics.public.orders",
         },
     )
     assert response.status_code == 200
@@ -558,7 +558,7 @@ async def test_rlac_query(client, manifest_str, connection_info):
             "sql": "SELECT c_name FROM customer",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response.status_code == 200
@@ -574,7 +574,7 @@ async def test_rlac_query(client, manifest_str, connection_info):
             "sql": "SELECT c_name FROM customer",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "SESSION_USER": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "SESSION_USER": "'Customer#000000001'",
         },
     )
     assert response.status_code == 200
@@ -605,7 +605,7 @@ async def test_clac_query(client, manifest_str, connection_info):
             "sql": "SELECT * FROM customer limit 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response.status_code == 200
@@ -621,7 +621,7 @@ async def test_clac_query(client, manifest_str, connection_info):
             "sql": "SELECT * FROM customer limit 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "2",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "2",
         },
     )
     assert response.status_code == 200
@@ -630,7 +630,7 @@ async def test_clac_query(client, manifest_str, connection_info):
     assert len(result["data"][0]) == 2
 
     manifest_with_required_properties = {
-        "catalog": "wren",
+        "catalog": "analytics",
         "schema": "public",
         "models": [
             {
@@ -673,7 +673,7 @@ async def test_clac_query(client, manifest_str, connection_info):
             "sql": "SELECT * FROM customer limit 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response.status_code == 200
@@ -689,7 +689,7 @@ async def test_clac_query(client, manifest_str, connection_info):
             "sql": "SELECT * FROM customer limit 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "2",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "2",
         },
     )
     assert response.status_code == 200
@@ -709,7 +709,7 @@ async def test_connection_timeout(
             "manifestStr": manifest_str,
             "sql": "SELECT 1 FROM (SELECT pg_sleep(5))",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert (
         "Query was cancelled: canceling statement due to statement timeout"
@@ -725,7 +725,7 @@ async def test_connection_timeout(
             "manifestStr": manifest_str,
             "sql": "SELECT 1 FROM (SELECT pg_sleep(5))",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert (
         "Query was cancelled: canceling statement due to statement timeout"
@@ -777,7 +777,7 @@ SELECT
             """,
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
+            X_ANALYTICS_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
         },
     )
     assert response.status_code == 200
@@ -839,7 +839,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": "SELECT letter FROM null_test ORDER BY id",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
+            X_ANALYTICS_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
         },
     )
     assert response.status_code == 200
@@ -857,7 +857,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": "SELECT letter FROM null_test ORDER BY id desc",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
+            X_ANALYTICS_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
         },
     )
     assert response.status_code == 200
@@ -868,7 +868,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
     assert result["data"][2][0] == "three"
 
 
-async def test_cache_with_different_wren_variables(
+async def test_cache_with_different_analytics_variables(
     client, manifest_str, connection_info
 ):
     response1 = await client.post(
@@ -879,7 +879,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response1.status_code == 200
@@ -897,7 +897,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response2.status_code == 200
@@ -914,7 +914,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000002'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000002'",
         },
     )
     assert response3.status_code == 200
@@ -938,7 +938,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response1.status_code == 200
@@ -955,7 +955,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response2.status_code == 200
@@ -971,7 +971,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "2",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "2",
         },
     )
     assert response3.status_code == 200
@@ -992,7 +992,7 @@ async def test_cache_with_timeout_headers(client, manifest_str, connection_info)
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_DB_STATEMENT_TIMEOUT: "30",
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "30",
         },
     )
     assert response1.status_code == 200
@@ -1007,7 +1007,7 @@ async def test_cache_with_timeout_headers(client, manifest_str, connection_info)
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_DB_STATEMENT_TIMEOUT: "30",
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "30",
         },
     )
     assert response2.status_code == 200
@@ -1022,7 +1022,7 @@ async def test_cache_with_timeout_headers(client, manifest_str, connection_info)
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_DB_STATEMENT_TIMEOUT: "60",
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "60",
         },
     )
     assert response3.status_code == 200
@@ -1068,7 +1068,7 @@ async def test_cache_ignores_irrelevant_headers(client, manifest_str, connection
     )  # Should hit cache despite different irrelevant headers
 
 
-async def test_cache_with_multiple_wren_variables(
+async def test_cache_with_multiple_analytics_variables(
     client, manifest_str, connection_info
 ):
     # First request with multiple variables
@@ -1080,8 +1080,8 @@ async def test_cache_with_multiple_wren_variables(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response1.status_code == 200
@@ -1096,8 +1096,8 @@ async def test_cache_with_multiple_wren_variables(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response2.status_code == 200
@@ -1112,9 +1112,9 @@ async def test_cache_with_multiple_wren_variables(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX
+            X_ANALYTICS_VARIABLE_PREFIX
             + "session_user": "'Customer#000000002'",  # Changed this value
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response3.status_code == 200
@@ -1129,8 +1129,8 @@ async def test_cache_with_multiple_wren_variables(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",  # Different order
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",  # Different order
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response4.status_code == 200
@@ -1151,9 +1151,9 @@ async def test_cache_with_mixed_relevant_irrelevant_headers(
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",  # Relevant
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",  # Relevant
             "User-Agent": "TestClient/1.0",  # Irrelevant
-            X_WREN_DB_STATEMENT_TIMEOUT: "30",  # Relevant
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "30",  # Relevant
             "X-Request-ID": "abc123",  # Irrelevant
         },
     )
@@ -1169,9 +1169,9 @@ async def test_cache_with_mixed_relevant_irrelevant_headers(
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",  # Same
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",  # Same
             "User-Agent": "DifferentClient/2.0",  # Changed but irrelevant
-            X_WREN_DB_STATEMENT_TIMEOUT: "30",  # Same
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "30",  # Same
             "X-Request-ID": "xyz789",  # Changed but irrelevant
             "Accept": "application/json",  # New but irrelevant
         },
@@ -1188,9 +1188,9 @@ async def test_cache_with_mixed_relevant_irrelevant_headers(
             "sql": "SELECT * FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "2",  # Changed (relevant)
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "2",  # Changed (relevant)
             "User-Agent": "TestClient/1.0",  # Back to original
-            X_WREN_DB_STATEMENT_TIMEOUT: "30",  # Same
+            X_ANALYTICS_DB_STATEMENT_TIMEOUT: "30",  # Same
             "X-Request-ID": "abc123",  # Back to original
         },
     )
@@ -1202,7 +1202,7 @@ async def test_cache_with_mixed_relevant_irrelevant_headers(
 
 async def test_query_unicode_table(client, connection_info):
     manifest = {
-        "catalog": "wrenai",
+        "catalog": "analyticsai",
         "schema": "public",
         "models": [
             {
@@ -1226,7 +1226,7 @@ async def test_query_unicode_table(client, connection_info):
             "manifestStr": manifest_str,
             "sql": "SELECT 欄位1, 欄位2 FROM 中文表 LIMIT 1",
         },
-        headers={X_WREN_FALLBACK_DISABLE: "true"},
+        headers={X_ANALYTICS_FALLBACK_DISABLE: "true"},
     )
 
     assert response.status_code == 200
@@ -1240,7 +1240,7 @@ async def test_query_unicode_table(client, connection_info):
 
 async def test_case_sensitive_without_quote(client, connection_info):
     manifest = {
-        "catalog": "wren",
+        "catalog": "analytics",
         "schema": "public",
         "models": [
             {
@@ -1270,7 +1270,7 @@ async def test_case_sensitive_without_quote(client, connection_info):
             "manifestStr": manifest_str,
             "sql": "SELECT O_orderkey, O_custkey FROM Orders LIMIT 1",
         },
-        headers={X_WREN_FALLBACK_DISABLE: "true"},
+        headers={X_ANALYTICS_FALLBACK_DISABLE: "true"},
     )
 
     assert response.status_code == 200
@@ -1289,7 +1289,7 @@ async def test_to_char_numeric(client, manifest_str, connection_info):
             "manifestStr": manifest_str,
             "sql": "SELECT to_char(1234, '9999') AS formatted_number, to_char(1234.567, '0000.00') AS formatted_double",
         },
-        headers={X_WREN_FALLBACK_DISABLE: "true"},
+        headers={X_ANALYTICS_FALLBACK_DISABLE: "true"},
     )
     assert response.status_code == 200
     result = response.json()

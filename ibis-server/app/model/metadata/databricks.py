@@ -6,7 +6,7 @@ from app.model.metadata.dto import (
     Column,
     Constraint,
     ConstraintType,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -14,21 +14,21 @@ from app.model.metadata.metadata import Metadata
 
 # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-datatypes
 DATABRICKS_TYPE_MAPPING = {
-    "bigint": RustWrenEngineColumnType.BIGINT,
-    "binary": RustWrenEngineColumnType.BYTEA,
-    "boolean": RustWrenEngineColumnType.BOOL,
-    "date": RustWrenEngineColumnType.DATE,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "float": RustWrenEngineColumnType.FLOAT,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "string": RustWrenEngineColumnType.STRING,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp_ntz": RustWrenEngineColumnType.TIMESTAMP,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "variant": RustWrenEngineColumnType.VARIANT,
-    "object": RustWrenEngineColumnType.JSON,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
+    "binary": RustAnalyticsEngineColumnType.BYTEA,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "float": RustAnalyticsEngineColumnType.FLOAT,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "string": RustAnalyticsEngineColumnType.STRING,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp_ntz": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "variant": RustAnalyticsEngineColumnType.VARIANT,
+    "object": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -163,25 +163,25 @@ class DatabricksMetadata(Metadata):
     def _format_compact_table_name(self, catalog: str, schema: str, table: str):
         return f"{catalog}.{schema}.{table}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
         # Convert to lowercase for comparison
         normalized_type = data_type.lower()
 
         if normalized_type.startswith("decimal"):
-            return RustWrenEngineColumnType.DECIMAL
+            return RustAnalyticsEngineColumnType.DECIMAL
 
         if normalized_type.startswith("geography"):
-            return RustWrenEngineColumnType.GEOGRAPHY
+            return RustAnalyticsEngineColumnType.GEOGRAPHY
 
         if normalized_type.startswith("geometry"):
-            return RustWrenEngineColumnType.GEOMETRY
+            return RustAnalyticsEngineColumnType.GEOMETRY
 
         # Use the module-level mapping table
         mapped_type = DATABRICKS_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Databricks data type: {data_type}")
 
         return mapped_type

@@ -17,7 +17,7 @@ WITH
                 FROM
                     "public_users_table" AS "u"
                 WHERE
-                    LOWER("u"."email_address") LIKE LOWER('%wrentest%')
+                    LOWER("u"."email_address") LIKE LOWER('%analyticstest%')
                     AND LOWER("u"."user_id") = LOWER("a"."account_id")
             )
     ),

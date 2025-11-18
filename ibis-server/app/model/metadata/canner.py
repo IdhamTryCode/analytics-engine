@@ -6,11 +6,11 @@ from gql.transport.aiohttp import AIOHTTPTransport
 from loguru import logger
 
 from app.model import CannerConnectionInfo
-from app.model.error import ErrorCode, WrenError
+from app.model.error import ErrorCode, AnalyticsError
 from app.model.metadata.dto import (
     Column,
     Constraint,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -18,36 +18,36 @@ from app.model.metadata.metadata import Metadata
 
 CANNER_TYPE_MAPPING = {
     # String Types (ignore Binary and Spatial Types for now)
-    "char": RustWrenEngineColumnType.CHAR,
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "tinytext": RustWrenEngineColumnType.TEXT,
-    "text": RustWrenEngineColumnType.TEXT,
-    "mediumtext": RustWrenEngineColumnType.TEXT,
-    "longtext": RustWrenEngineColumnType.TEXT,
-    "enum": RustWrenEngineColumnType.VARCHAR,
-    "set": RustWrenEngineColumnType.VARCHAR,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "tinytext": RustAnalyticsEngineColumnType.TEXT,
+    "text": RustAnalyticsEngineColumnType.TEXT,
+    "mediumtext": RustAnalyticsEngineColumnType.TEXT,
+    "longtext": RustAnalyticsEngineColumnType.TEXT,
+    "enum": RustAnalyticsEngineColumnType.VARCHAR,
+    "set": RustAnalyticsEngineColumnType.VARCHAR,
     # Numeric Types(https://dev.mysql.com/doc/refman/8.4/en/numeric-types.html)
-    "bit": RustWrenEngineColumnType.TINYINT,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "mediumint": RustWrenEngineColumnType.INTEGER,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "integer": RustWrenEngineColumnType.INTEGER,
-    "bigint": RustWrenEngineColumnType.BIGINT,
+    "bit": RustAnalyticsEngineColumnType.TINYINT,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "mediumint": RustAnalyticsEngineColumnType.INTEGER,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "integer": RustAnalyticsEngineColumnType.INTEGER,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
     # boolean
-    "bool": RustWrenEngineColumnType.BOOL,
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "bool": RustAnalyticsEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Decimal
-    "float": RustWrenEngineColumnType.FLOAT8,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "numeric": RustWrenEngineColumnType.NUMERIC,
+    "float": RustAnalyticsEngineColumnType.FLOAT8,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "numeric": RustAnalyticsEngineColumnType.NUMERIC,
     # Date and Time Types(https://dev.mysql.com/doc/refman/8.4/en/date-and-time-types.html)
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMPTZ,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
     # JSON Type
-    "json": RustWrenEngineColumnType.JSON,
+    "json": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -104,7 +104,7 @@ class CannerMetadata(Metadata):
         try:
             return next(ws["id"] for ws in workspaces if ws["sqlName"] == ws_sql_name)
         except StopIteration:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.INVALID_CONNECTION_INFO, f"Workspace {ws_sql_name} not found"
             )
 
@@ -242,10 +242,10 @@ class CannerMetadata(Metadata):
 
         # Use the module-level mapping table
         mapped_type = CANNER_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Canner data type: {data_type}")
 
         return mapped_type

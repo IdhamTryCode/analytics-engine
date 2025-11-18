@@ -5,7 +5,7 @@ from loguru import logger
 from orjson import orjson
 
 from app.config import get_config
-from app.model.error import ErrorCode, ErrorPhase, WrenError
+from app.model.error import ErrorCode, ErrorPhase, AnalyticsError
 
 analytics_engine_endpoint = get_config().analytics_engine_endpoint
 
@@ -28,7 +28,7 @@ class JavaEngineConnector:
 
     async def dry_plan(self, manifest_str: str, sql: str):
         if self.client is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_INTERNAL_ERROR,
                 "ANALYTICS_ENGINE_ENDPOINT is not set. Cannot call dry_plan without a valid endpoint.",
                 phase=ErrorPhase.SQL_PLANNING,

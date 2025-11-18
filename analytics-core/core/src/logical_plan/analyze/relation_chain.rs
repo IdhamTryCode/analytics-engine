@@ -11,7 +11,7 @@ use crate::mdl::lineage::DatasetLink;
 use crate::mdl::manifest::JoinType;
 use crate::mdl::utils::{qualify_name_from_column_name, quoted};
 use crate::mdl::Dataset;
-use crate::mdl::{AnalyzedWrenMDL, SessionStateRef};
+use crate::mdl::{AnalyzedAnalyticsMDL, SessionStateRef};
 use crate::{mdl, DataFusionError};
 use datafusion::common::alias::AliasGenerator;
 use datafusion::common::{
@@ -43,7 +43,7 @@ impl RelationChain {
     pub(crate) fn source(
         dataset: &Dataset,
         required_fields: Vec<Expr>,
-        analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state_ref: SessionStateRef,
         session_properties: SessionPropertiesRef,
     ) -> Result<Self> {
@@ -53,7 +53,7 @@ impl RelationChain {
                     node: Arc::new(ModelSourceNode::new(
                         Arc::clone(source_model),
                         required_fields,
-                        analyzed_wren_mdl,
+                        analyzed_analytics_mdl,
                         session_state_ref,
                         session_properties,
                         None,
@@ -73,7 +73,7 @@ impl RelationChain {
         iter: impl Iterator<Item = NodeIndex>,
         directed_graph: Graph<Dataset, DatasetLink>,
         model_required_fields: &HashMap<TableReference, BTreeSet<OrdExpr>>,
-        analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state_ref: SessionStateRef,
         properties: SessionPropertiesRef,
     ) -> Result<Self> {
@@ -86,8 +86,8 @@ impl RelationChain {
             };
             let link = directed_graph.edge_weight(link_index).unwrap();
             let target_ref = TableReference::full(
-                analyzed_wren_mdl.wren_mdl().catalog(),
-                analyzed_wren_mdl.wren_mdl().schema(),
+                analyzed_analytics_mdl.analytics_mdl().catalog(),
+                analyzed_analytics_mdl.analytics_mdl().schema(),
                 target.name(),
             );
             let Some(fields) = model_required_fields.get(&target_ref) else {
@@ -113,7 +113,7 @@ impl RelationChain {
                         Arc::clone(target_model),
                         exprs,
                         None,
-                        Arc::clone(&analyzed_wren_mdl),
+                        Arc::clone(&analyzed_analytics_mdl),
                         Arc::clone(&session_state_ref),
                         Arc::clone(&properties),
                     )?;

@@ -62,7 +62,7 @@ class ErrorResponse(BaseModel):
     correlation_id: str | None = Field(alias="correlationId", default=None)
 
 
-class WrenError(Exception):
+class AnalyticsError(Exception):
     error_code: ErrorCode
     message: str
     phase: ErrorPhase | None = None
@@ -113,7 +113,7 @@ class WrenError(Exception):
                 return HTTP_500_INTERNAL_SERVER_ERROR
 
 
-class DatabaseTimeoutError(WrenError):
+class DatabaseTimeoutError(AnalyticsError):
     def __init__(
         self,
         message: str,

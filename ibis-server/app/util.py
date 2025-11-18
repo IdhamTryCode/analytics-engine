@@ -38,7 +38,7 @@ from app.dependencies import (
     X_CACHE_HIT,
     X_CACHE_OVERRIDE,
     X_CACHE_OVERRIDE_AT,
-    X_WREN_TIMEZONE,
+    X_ANALYTICS_TIMEZONE,
 )
 from app.model.data_source import DataSource
 from app.model.error import DatabaseTimeoutError
@@ -47,8 +47,8 @@ from app.model.metadata.metadata import Metadata
 tracer = trace.get_tracer(__name__)
 
 
-MIGRATION_MESSAGE = "Wren engine is migrating to Rust version now. \
-    Wren AI team are appreciate if you can provide the error messages and related logs for us."
+MIGRATION_MESSAGE = "Analytics engine is migrating to Rust version now. \
+    Analytics AI team are appreciate if you can provide the error messages and related logs for us."
 
 
 @tracer.start_as_current_span("base64_to_dict", kind=trace.SpanKind.INTERNAL)
@@ -91,18 +91,18 @@ def _with_session_timezone(
 
     for field in df.schema:
         if pa.types.is_timestamp(field.type):
-            if field.type.tz is not None and X_WREN_TIMEZONE in headers:
+            if field.type.tz is not None and X_ANALYTICS_TIMEZONE in headers:
                 # change the timezone to the seesion timezone
                 fields.append(
                     pa.field(
                         field.name,
-                        pa.timestamp(field.type.unit, tz=headers[X_WREN_TIMEZONE]),
+                        pa.timestamp(field.type.unit, tz=headers[X_ANALYTICS_TIMEZONE]),
                         nullable=True,
                     )
                 )
                 continue
             if data_source == DataSource.mysql:
-                timezone = headers.get(X_WREN_TIMEZONE, "UTC")
+                timezone = headers.get(X_ANALYTICS_TIMEZONE, "UTC")
                 # TODO: ibis mysql loss the timezone information
                 # we cast timestamp to timestamp with session timezone for mysql
                 fields.append(
@@ -129,8 +129,8 @@ def _with_session_timezone(
 
 def get_datafusion_context(headers: dict) -> datafusion.SessionContext:
     config = datafusion.SessionConfig()
-    if X_WREN_TIMEZONE in headers:
-        config.set("datafusion.execution.time_zone", headers[X_WREN_TIMEZONE])
+    if X_ANALYTICS_TIMEZONE in headers:
+        config.set("datafusion.execution.time_zone", headers[X_ANALYTICS_TIMEZONE])
     else:
         # Default to UTC if no timezone is provided
         config.set("datafusion.execution.time_zone", "UTC")

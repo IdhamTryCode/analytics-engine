@@ -1,5 +1,5 @@
-# Wren Core Manifest Macro
-This is module to collect the generating macros for the manifest struct of Wren MDL.
+# Analytics Core Manifest Macro
+This is module to collect the generating macros for the manifest struct of Analytics MDL.
 They are used to generate the manifest struct for different bindings.
 Currently, we have the following bindings:
 - Python

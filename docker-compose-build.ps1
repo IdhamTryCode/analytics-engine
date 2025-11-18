@@ -13,21 +13,21 @@ if (Test-Path $pomPath) {
     }
 }
 
-$jarDir = "analytics-core-legacy\wren-server\target"
+$jarDir = "analytics-core-legacy\analytics-server\target"
 function Get-JarPath {
     param(
         [string] $Dir,
         [string] $FallbackName
     )
     if (Test-Path $Dir) {
-        $jar = Get-ChildItem -Path $Dir -Filter "wren-server-*-executable.jar" -ErrorAction SilentlyContinue | Select-Object -First 1
+        $jar = Get-ChildItem -Path $Dir -Filter "analytics-server-*-executable.jar" -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($jar) {
             return $jar.FullName
         }
     }
     return Join-Path $Dir $FallbackName
 }
-$jarPath = Get-JarPath -Dir $jarDir -FallbackName "wren-server-${version}-executable.jar"
+$jarPath = Get-JarPath -Dir $jarDir -FallbackName "analytics-server-${version}-executable.jar"
 
 Write-Host "Checking for JAR file: $jarPath" -ForegroundColor Cyan
 
@@ -50,7 +50,7 @@ if (-not (Test-Path $jarPath)) {
     }
     
     # Verify JAR was created
-    $jarPath = Get-JarPath -Dir $jarDir -FallbackName "wren-server-${version}-executable.jar"
+    $jarPath = Get-JarPath -Dir $jarDir -FallbackName "analytics-server-${version}-executable.jar"
     if (-not (Test-Path $jarPath)) {
         Write-Host "Error: JAR file still not found after build!" -ForegroundColor Red
         Write-Host "Expected location: $jarPath" -ForegroundColor Yellow

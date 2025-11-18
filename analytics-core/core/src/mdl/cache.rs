@@ -1,5 +1,5 @@
 //! Caching layer for expensive MDL computations
-use crate::mdl::{AnalyzedWrenMDL, WrenMDL};
+use crate::mdl::{AnalyzedAnalyticsMDL, AnalyticsMDL};
 use crate::mdl::context::{Mode, SessionPropertiesRef};
 use crate::mdl::lineage::Lineage;
 use crate::mdl::manifest::Manifest;
@@ -15,7 +15,7 @@ struct LineageCacheKey {
     manifest_hash: u64,
 }
 
-/// Cache key for AnalyzedWrenMDL computation
+/// Cache key for AnalyzedAnalyticsMDL computation
 #[derive(Hash, PartialEq, Eq, Clone)]
 struct AnalyzedMDLCacheKey {
     manifest_hash: u64,
@@ -61,7 +61,7 @@ fn hash_properties(properties: &SessionPropertiesRef) -> u64 {
 
 // Global caches - initialized lazily
 static LINEAGE_CACHE: OnceLock<Cache<LineageCacheKey, Arc<Lineage>>> = OnceLock::new();
-static ANALYZED_MDL_CACHE: OnceLock<Cache<AnalyzedMDLCacheKey, Arc<AnalyzedWrenMDL>>> = OnceLock::new();
+static ANALYZED_MDL_CACHE: OnceLock<Cache<AnalyzedMDLCacheKey, Arc<AnalyzedAnalyticsMDL>>> = OnceLock::new();
 
 /// Get or initialize Lineage cache
 fn get_lineage_cache() -> &'static Cache<LineageCacheKey, Arc<Lineage>> {
@@ -71,8 +71,8 @@ fn get_lineage_cache() -> &'static Cache<LineageCacheKey, Arc<Lineage>> {
     })
 }
 
-/// Get or initialize AnalyzedWrenMDL cache
-fn get_analyzed_mdl_cache() -> &'static Cache<AnalyzedMDLCacheKey, Arc<AnalyzedWrenMDL>> {
+/// Get or initialize AnalyzedAnalyticsMDL cache
+fn get_analyzed_mdl_cache() -> &'static Cache<AnalyzedMDLCacheKey, Arc<AnalyzedAnalyticsMDL>> {
     ANALYZED_MDL_CACHE.get_or_init(|| {
         // Cache size: 50 entries (analyzed MDL is larger, so smaller cache)
         Cache::new(50)
@@ -80,7 +80,7 @@ fn get_analyzed_mdl_cache() -> &'static Cache<AnalyzedMDLCacheKey, Arc<AnalyzedW
 }
 
 /// Compute Lineage with caching
-pub fn compute_lineage_cached(mdl: &WrenMDL) -> Result<Arc<Lineage>> {
+pub fn compute_lineage_cached(mdl: &AnalyticsMDL) -> Result<Arc<Lineage>> {
     let cache_key = LineageCacheKey {
         manifest_hash: hash_manifest(&mdl.manifest),
     };
@@ -101,12 +101,12 @@ pub fn compute_lineage_cached(mdl: &WrenMDL) -> Result<Arc<Lineage>> {
     Ok(lineage)
 }
 
-/// Compute AnalyzedWrenMDL with caching
+/// Compute AnalyzedAnalyticsMDL with caching
 pub fn compute_analyzed_mdl_cached(
     manifest: Manifest,
     properties: SessionPropertiesRef,
     mode: Mode,
-) -> Result<Arc<AnalyzedWrenMDL>> {
+) -> Result<Arc<AnalyzedAnalyticsMDL>> {
     // Compute cache key (using references to avoid consuming values)
     let cache_key = AnalyzedMDLCacheKey {
         manifest_hash: hash_manifest(&manifest),
@@ -117,15 +117,15 @@ pub fn compute_analyzed_mdl_cached(
     // Try to get from cache
     if let Some(cached) = get_analyzed_mdl_cache().get(&cache_key) {
         debug!(
-            "AnalyzedWrenMDL cache hit for manifest hash: {}, properties hash: {}, mode: {:?}",
+            "AnalyzedAnalyticsMDL cache hit for manifest hash: {}, properties hash: {}, mode: {:?}",
             cache_key.manifest_hash, cache_key.properties_hash, cache_key.mode
         );
         return Ok(cached);
     }
 
     // Cache miss - compute analyzed MDL (values are consumed here)
-    debug!("AnalyzedWrenMDL cache miss, computing...");
-    let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze_uncached(manifest, properties, mode)?);
+    debug!("AnalyzedAnalyticsMDL cache miss, computing...");
+    let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze_uncached(manifest, properties, mode)?);
     
     // Store in cache
     get_analyzed_mdl_cache().insert(cache_key.clone(), analyzed_mdl.clone());

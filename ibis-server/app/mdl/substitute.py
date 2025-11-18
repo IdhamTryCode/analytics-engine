@@ -5,7 +5,7 @@ from sqlglot import exp, parse_one
 from sqlglot.optimizer.scope import build_scope
 
 from app.model.data_source import DataSource
-from app.model.error import ErrorCode, ErrorPhase, WrenError
+from app.model.error import ErrorCode, ErrorPhase, AnalyticsError
 from app.util import base64_to_dict
 
 tracer = trace.get_tracer(__name__)
@@ -40,14 +40,14 @@ class ModelSubstitute:
                 # if model name is ambiguous, raise an error
                 duplicate_keys = get_case_insensitive_duplicate_keys(self.model_dict)
                 if model is not None and key.lower() in duplicate_keys:
-                    raise WrenError(
+                    raise AnalyticsError(
                         ErrorCode.GENERIC_USER_ERROR,
                         f"Ambiguous model: found multiple matches for {source}",
                         phase=ErrorPhase.SQL_SUBSTITUTE,
                     )
 
                 if model is None:
-                    raise WrenError(
+                    raise AnalyticsError(
                         ErrorCode.NOT_FOUND,
                         f"Model not found: {source}",
                         phase=ErrorPhase.SQL_SUBSTITUTE,

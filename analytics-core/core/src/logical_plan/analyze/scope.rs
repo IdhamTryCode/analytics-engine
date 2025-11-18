@@ -31,9 +31,9 @@ pub struct Scope {
     pub id: ScopeId,
     /// The columns required by the dataset
     pub required_columns: HashMap<TableReference, HashSet<Expr>>,
-    /// The Wren dataset visited in the scope (only the Wren dataset)
+    /// The Analytics dataset visited in the scope (only the Analytics dataset)
     pub visited_dataset: HashMap<TableReference, Dataset>,
-    /// The table name visited in the scope (not only the Wren dataset)
+    /// The table name visited in the scope (not only the Analytics dataset)
     pub visited_tables: HashSet<TableReference>,
     /// The parent scope id
     pub parent_id: Option<ScopeId>,

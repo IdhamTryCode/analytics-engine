@@ -31,13 +31,13 @@
 - [x] **Files Updated**:
   - ✅ `analytics-core/core/src/mdl/mod.rs` - 4 optimizations:
     - `transform_sql_with_ctx` (line 415-422) - Changed to use `.clone()` method
-    - `wren_mdl()` method (line 103-106) - More idiomatic
+    - `analytics_mdl()` method (line 103-106) - More idiomatic
     - `permission_analyze` (line 477-482) - Optimized properties clone
-    - `transform_sql_with_ctx` (line 449-460) - **Cached wren_mdl to avoid duplicate calls** (real optimization)
+    - `transform_sql_with_ctx` (line 449-460) - **Cached analytics_mdl to avoid duplicate calls** (real optimization)
   - ✅ `analytics-core/core/src/mdl/context.rs` - 3 optimizations:
-    - `apply_wren_on_ctx` (line 101-106) - Changed to use `.clone()` method
+    - `apply_analytics_on_ctx` (line 101-106) - Changed to use `.clone()` method
     - `register_table_with_mdl` (line 308-315) - Optimized model and analyzed_mdl clones
-    - `WrenDataSource::new` (line 348-358) - Optimized analyzed_mdl and column clones
+    - `AnalyticsDataSource::new` (line 348-358) - Optimized analyzed_mdl and column clones
 - [x] **Documentation**: Created `analytics-core/core/PERFORMANCE_OPTIMIZATIONS.md`
 - [x] **Remaining Work** (Lower Priority - Reviewed):
   - [x] ✅ Review remaining `Arc::clone()` calls di test cases (72 instances) - **Reviewed**: Test cases are lower priority, most clones are necessary for test isolation
@@ -45,10 +45,10 @@
   - [x] ✅ Profile to verify if Arc clones are actual bottleneck - **Reviewed**: Arc clones are cheap (just reference count increment), actual bottleneck likely elsewhere. Profiling should be done as part of TODO-002 (cancelled - user will do independently)
 - [x] **Strategy**:
   1. ✅ Changed `Arc::clone(&x)` to `x.clone()` (more idiomatic Rust)
-  2. ✅ Added caching untuk avoid duplicate `wren_mdl()` calls
+  2. ✅ Added caching untuk avoid duplicate `analytics_mdl()` calls
   3. ✅ Added comments untuk clarify optimization intent
 - [x] **Actual Impact**: 
-  - Reduced one `wren_mdl()` call per SQL transformation (real optimization)
+  - Reduced one `analytics_mdl()` call per SQL transformation (real optimization)
   - Improved code readability and consistency
   - Note: Most Arc clones are necessary for ownership, so actual reduction is limited
 - [x] **Time Estimate**: Completed
@@ -60,7 +60,7 @@
   - ✅ `analytics-core/core/src/mdl/mod.rs` - 2 optimizations:
     - String replacement (line 465-472) - Applied `string_ops::replace_efficient()` with early return
     - catalog_schema_prefix building (line 178-185) - Pre-allocated capacity instead of `format!`
-  - ✅ `analytics-core/core/src/mdl/dialect/wren_dialect.rs` - 1 optimization:
+  - ✅ `analytics-core/core/src/mdl/dialect/analytics_dialect.rs` - 1 optimization:
     - Regex caching (line 30-38, 53-54) - Cached regex pattern using `std::sync::OnceLock`
   - ✅ `analytics-core/core/src/performance.rs` - Enhanced `replace_efficient()` implementation
 - [x] **Changes**:
@@ -80,12 +80,12 @@
 - [x] **Task**: Add caching untuk expensive computations
 - [x] **Implemented**:
   1. `Lineage::new()` → cached via `mdl/cache.rs::compute_lineage_cached` (hash manifest)
-  2. `AnalyzedWrenMDL::analyze()` → cached via `mdl/cache.rs::compute_analyzed_mdl_cached` (hash manifest + properties + mode)
+  2. `AnalyzedAnalyticsMDL::analyze()` → cached via `mdl/cache.rs::compute_analyzed_mdl_cached` (hash manifest + properties + mode)
   3. Compiled regex patterns → handled in TODO-005 using `OnceLock`
   4. SQL plan cache → N/A for now (tidak dibutuhkan saat ini)
 - [x] **Implementation Notes**:
   - Menggunakan `std::sync::OnceLock` + `analytics_core::performance::cache::Cache<K, Arc<V>>`
-  - API: `compute_lineage_cached(&WrenMDL)` dan `compute_analyzed_mdl_cached(manifest, properties, mode)`
+  - API: `compute_lineage_cached(&AnalyticsMDL)` dan `compute_analyzed_mdl_cached(manifest, properties, mode)`
 - [x] **Expected Impact**: 30-50% reduction in repeated computations
 - [x] **Time Estimate**: Completed
 - [x] **Dependencies**: None

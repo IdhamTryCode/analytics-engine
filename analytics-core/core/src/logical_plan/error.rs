@@ -1,16 +1,16 @@
 use std::{error::Error, fmt::Display};
 
 #[derive(Debug, Clone)]
-pub enum WrenError {
+pub enum AnalyticsError {
     PermissionDenied(String),
 }
 
-impl Error for WrenError {}
+impl Error for AnalyticsError {}
 
-impl Display for WrenError {
+impl Display for AnalyticsError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WrenError::PermissionDenied(msg) => write!(f, "Permission Denied: {msg}"),
+            AnalyticsError::PermissionDenied(msg) => write!(f, "Permission Denied: {msg}"),
         }
     }
 }

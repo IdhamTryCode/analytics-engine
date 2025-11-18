@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from testcontainers.clickhouse import ClickHouseContainer
 
-from app.model.data_source import X_WREN_DB_STATEMENT_TIMEOUT
+from app.model.data_source import X_ANALYTICS_DB_STATEMENT_TIMEOUT
 from app.model.error import ErrorCode
 from tests.conftest import file_path
 
@@ -480,7 +480,7 @@ async def test_connection_timeout(
             "manifestStr": manifest_str,
             "sql": "SELECT sleep(3)",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert response.status_code == 504  # Gateway Timeout
     assert "Query was cancelled:" in response.text
@@ -493,7 +493,7 @@ async def test_connection_timeout(
             "manifestStr": manifest_str,
             "sql": "SELECT sleep(3)",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert response.status_code == 504  # Gateway Timeout
     assert "Query was cancelled:" in response.text

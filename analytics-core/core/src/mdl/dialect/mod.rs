@@ -19,6 +19,6 @@
 
 mod inner_dialect;
 mod utils;
-mod wren_dialect;
+mod analytics_dialect;
 
-pub use wren_dialect::WrenDialect;
+pub use analytics_dialect::AnalyticsDialect;

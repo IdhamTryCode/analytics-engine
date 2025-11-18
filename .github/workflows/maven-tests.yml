@@ -40,7 +40,7 @@ jobs:
           ./mvnw clean install -B -DskipTests
       - name: unit tests
         run: |
-          ./mvnw test -B --fail-at-end -pl !:wren-tests
+          ./mvnw test -B --fail-at-end -pl !:analytics-tests
       - name: integration tests
         env:
           TEST_BIG_QUERY_PROJECT_ID: ${{ secrets.TEST_BIG_QUERY_PROJECT_ID }}
@@ -50,4 +50,4 @@ jobs:
           TEST_DUCKDB_STORAGE_ACCESS_KEY: ${{ secrets.TEST_DUCKDB_STORAGE_ACCESS_KEY }}
           TEST_DUCKDB_STORAGE_SECRET_KEY: ${{ secrets.TEST_DUCKDB_STORAGE_SECRET_KEY }}
         run: |
-          ./mvnw test -B --fail-at-end -pl :wren-tests
+          ./mvnw test -B --fail-at-end -pl :analytics-tests

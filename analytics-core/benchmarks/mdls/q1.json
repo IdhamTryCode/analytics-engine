@@ -1,5 +1,5 @@
 {
-    "schema": "wrenai",
+    "schema": "analyticsai",
     "catalog": "public",
     "sampleDataFolder": "",
     "dataSource": "POSTGRES",

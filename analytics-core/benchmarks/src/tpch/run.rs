@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use structopt::StructOpt;
 use analytics_core::mdl::context::Mode;
-use analytics_core::mdl::{transform_sql_with_ctx, AnalyzedWrenMDL};
+use analytics_core::mdl::{transform_sql_with_ctx, AnalyzedAnalyticsMDL};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(verbatim_doc_comment)]
@@ -51,7 +51,7 @@ impl RunOpt {
 
     async fn benchmark_query(&self, query_id: usize) -> Result<Vec<QueryResult>> {
         let ctx = SessionContext::new();
-        let mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             tpch_manifest(),
             Arc::new(HashMap::default()),
             Mode::Unparse,

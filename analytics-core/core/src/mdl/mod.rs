@@ -1,8 +1,8 @@
 use crate::logical_plan::analyze::access_control::validate_clac_rule;
-use crate::logical_plan::error::WrenError;
+use crate::logical_plan::error::AnalyticsError;
 use crate::logical_plan::utils::{from_qualified_name_str, try_map_data_type};
 use crate::mdl::builder::ManifestBuilder;
-use crate::mdl::context::{apply_wren_on_ctx, Mode, WrenDataSource};
+use crate::mdl::context::{apply_analytics_on_ctx, Mode, AnalyticsDataSource};
 use crate::mdl::function::{
     ByPassAggregateUDF, ByPassScalarUDF, ByPassWindowFunction, FunctionType,
     RemoteFunction,
@@ -25,7 +25,7 @@ use datafusion::sql::sqlparser::dialect::dialect_from_str;
 use datafusion::sql::unparser::Unparser;
 use datafusion::sql::TableReference;
 pub use dataset::Dataset;
-use dialect::WrenDialect;
+use dialect::AnalyticsDialect;
 use log::{debug, info};
 use manifest::Relationship;
 use parking_lot::RwLock;
@@ -51,30 +51,30 @@ pub mod utils;
 pub type SessionStateRef = Arc<RwLock<SessionState>>;
 
 #[derive(Clone)]
-pub struct AnalyzedWrenMDL {
-    pub wren_mdl: Arc<WrenMDL>,
+pub struct AnalyzedAnalyticsMDL {
+    pub analytics_mdl: Arc<AnalyticsMDL>,
     pub lineage: Arc<lineage::Lineage>,
 }
 
-impl Hash for AnalyzedWrenMDL {
+impl Hash for AnalyzedAnalyticsMDL {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.wren_mdl.hash(state);
+        self.analytics_mdl.hash(state);
     }
 }
 
-impl Default for AnalyzedWrenMDL {
+impl Default for AnalyzedAnalyticsMDL {
     fn default() -> Self {
         let manifest = ManifestBuilder::default().build();
-        let wren_mdl = WrenMDL::new(manifest);
-        let lineage = lineage::Lineage::new(&wren_mdl).unwrap();
-        AnalyzedWrenMDL {
-            wren_mdl: Arc::new(wren_mdl),
+        let analytics_mdl = AnalyticsMDL::new(manifest);
+        let lineage = lineage::Lineage::new(&analytics_mdl).unwrap();
+        AnalyzedAnalyticsMDL {
+            analytics_mdl: Arc::new(analytics_mdl),
             lineage: Arc::new(lineage),
         }
     }
 }
 
-impl AnalyzedWrenMDL {
+impl AnalyzedAnalyticsMDL {
     /// Analyze MDL with caching support
     pub fn analyze(
         manifest: Manifest,
@@ -84,7 +84,7 @@ impl AnalyzedWrenMDL {
         // Use cached version - compute_analyzed_mdl_cached handles cache lookup and computation
         let cached = cache::compute_analyzed_mdl_cached(manifest, properties, mode)?;
         
-        // Convert Arc<AnalyzedWrenMDL> to AnalyzedWrenMDL
+        // Convert Arc<AnalyzedAnalyticsMDL> to AnalyzedAnalyticsMDL
         // Try to unwrap, if that fails (multiple references), clone
         match Arc::try_unwrap(cached) {
             Ok(analyzed) => Ok(analyzed),
@@ -98,39 +98,39 @@ impl AnalyzedWrenMDL {
         properties: SessionPropertiesRef,
         mode: Mode,
     ) -> Result<Self> {
-        let wren_mdl = Arc::new(WrenMDL::infer_and_register_remote_table(
+        let analytics_mdl = Arc::new(AnalyticsMDL::infer_and_register_remote_table(
             manifest, properties, mode,
         )?);
         // Use cached lineage if available
-        let lineage = match cache::compute_lineage_cached(&wren_mdl) {
+        let lineage = match cache::compute_lineage_cached(&analytics_mdl) {
             Ok(cached) => cached,
-            Err(_) => Arc::new(lineage::Lineage::new(&wren_mdl)?),
+            Err(_) => Arc::new(lineage::Lineage::new(&analytics_mdl)?),
         };
-        Ok(AnalyzedWrenMDL { wren_mdl, lineage })
+        Ok(AnalyzedAnalyticsMDL { analytics_mdl, lineage })
     }
 
     pub fn analyze_with_tables(
         manifest: Manifest,
         register_tables: HashMap<String, Arc<dyn TableProvider>>,
     ) -> Result<Self> {
-        let mut wren_mdl = WrenMDL::new(manifest);
+        let mut analytics_mdl = AnalyticsMDL::new(manifest);
         for (name, table) in register_tables {
-            wren_mdl.register_table(name, table);
+            analytics_mdl.register_table(name, table);
         }
         // Use cached lineage if available (cache key based on manifest only)
-        let lineage = match cache::compute_lineage_cached(&wren_mdl) {
+        let lineage = match cache::compute_lineage_cached(&analytics_mdl) {
             Ok(cached) => cached,
-            Err(_) => Arc::new(lineage::Lineage::new(&wren_mdl)?),
+            Err(_) => Arc::new(lineage::Lineage::new(&analytics_mdl)?),
         };
-        Ok(AnalyzedWrenMDL {
-            wren_mdl: Arc::new(wren_mdl),
+        Ok(AnalyzedAnalyticsMDL {
+            analytics_mdl: Arc::new(analytics_mdl),
             lineage,
         })
     }
 
-    pub fn wren_mdl(&self) -> Arc<WrenMDL> {
+    pub fn analytics_mdl(&self) -> Arc<AnalyticsMDL> {
         // Use clone() method instead of Arc::clone() for better readability
-        self.wren_mdl.clone()
+        self.analytics_mdl.clone()
     }
 
     pub fn lineage(&self) -> &lineage::Lineage {
@@ -140,20 +140,20 @@ impl AnalyzedWrenMDL {
 
 pub type RegisterTables = HashMap<String, Arc<dyn TableProvider>>;
 // This is the main struct that holds the manifest and provides methods to access the models
-pub struct WrenMDL {
+pub struct AnalyticsMDL {
     pub manifest: Manifest,
     pub qualified_references: HashMap<datafusion::common::Column, ColumnReference>,
     pub register_tables: RegisterTables,
     pub catalog_schema_prefix: String,
 }
 
-impl Hash for WrenMDL {
+impl Hash for AnalyticsMDL {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.manifest.hash(state);
     }
 }
 
-impl WrenMDL {
+impl AnalyticsMDL {
     pub fn new(manifest: Manifest) -> Self {
         let mut qualifed_references = HashMap::new();
         manifest.models.iter().for_each(|model| {
@@ -212,7 +212,7 @@ impl WrenMDL {
         catalog_schema_prefix.push_str(&manifest.schema);
         catalog_schema_prefix.push('.');
 
-        WrenMDL {
+        AnalyticsMDL {
             catalog_schema_prefix,
             manifest,
             qualified_references: qualifed_references,
@@ -221,17 +221,17 @@ impl WrenMDL {
     }
 
     pub fn new_ref(manifest: Manifest) -> Arc<Self> {
-        Arc::new(WrenMDL::new(manifest))
+        Arc::new(AnalyticsMDL::new(manifest))
     }
 
-    /// Create a WrenMDL from a manifest and register the table reference of the model as a remote table.
+    /// Create a AnalyticsMDL from a manifest and register the table reference of the model as a remote table.
     /// All the column without expression will be considered a column
     pub fn infer_and_register_remote_table(
         manifest: Manifest,
         properties: SessionPropertiesRef,
         mode: Mode,
     ) -> Result<Self> {
-        let mut mdl = WrenMDL::new(manifest);
+        let mut mdl = AnalyticsMDL::new(manifest);
         let sources: Vec<_> = mdl
             .models()
             .iter()
@@ -264,7 +264,7 @@ impl WrenMDL {
                     })
                     .collect();
                 let schema = Arc::new(datafusion::arrow::datatypes::Schema::new(fields));
-                let datasource = WrenDataSource::new_with_schema(schema);
+                let datasource = AnalyticsDataSource::new_with_schema(schema);
                 Ok((name.to_quoted_string(), Arc::new(datasource)))
             })
             .collect::<Result<Vec<_>>>()?;
@@ -288,7 +288,7 @@ impl WrenMDL {
         }
 
         if let Some(expression) = column.expression() {
-            let ExprWithAlias { expr, alias } = WrenMDL::sql_to_expr(expression)?;
+            let ExprWithAlias { expr, alias } = AnalyticsMDL::sql_to_expr(expression)?;
             // if the column is a simple column reference, we can infer the column name
             if let Some(name) = Self::collect_one_column(&expr) {
                 Ok(Some(Field::new(
@@ -402,7 +402,7 @@ impl WrenMDL {
 }
 
 /// Create a SessionContext with the default functions registered
-pub fn create_wren_ctx(config: Option<SessionConfig>) -> SessionContext {
+pub fn create_analytics_ctx(config: Option<SessionConfig>) -> SessionContext {
     let builder = SessionStateBuilder::new()
         .with_expr_planners(SessionStateDefaults::default_expr_planners())
         .with_scalar_functions(crate::mdl::function::scalar_functions())
@@ -421,14 +421,14 @@ pub fn create_wren_ctx(config: Option<SessionConfig>) -> SessionContext {
 
 /// Transform the SQL based on the MDL
 pub fn transform_sql(
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     remote_functions: &[RemoteFunction],
     properties: HashMap<String, Option<String>>,
     sql: &str,
 ) -> Result<String> {
     let runtime = tokio::runtime::Runtime::new().unwrap();
     runtime.block_on(transform_sql_with_ctx(
-        &create_wren_ctx(None),
+        &create_analytics_ctx(None),
         analyzed_mdl,
         remote_functions,
         Arc::new(properties),
@@ -439,7 +439,7 @@ pub fn transform_sql(
 /// Transform the SQL based on the MDL with the SessionContext
 pub async fn transform_sql_with_ctx(
     ctx: &SessionContext,
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     remote_functions: &[RemoteFunction],
     properties: SessionPropertiesRef,
     sql: &str,
@@ -451,7 +451,7 @@ pub async fn transform_sql_with_ctx(
         Ok::<_, DataFusionError>(())
     })?;
     // Pass Arc directly without cloning since we already own it
-    let ctx = apply_wren_on_ctx(
+    let ctx = apply_analytics_on_ctx(
         ctx,
         analyzed_mdl.clone(),
         properties.clone(),
@@ -463,7 +463,7 @@ pub async fn transform_sql_with_ctx(
         Err(e) => {
             eprintln!("Failed to create logical plan: {e}");
             match permission_analyze(
-                analyzed_mdl.wren_mdl().manifest.clone(),
+                analyzed_mdl.analytics_mdl().manifest.clone(),
                 sql,
                 remote_functions,
                 properties,
@@ -483,18 +483,18 @@ pub async fn transform_sql_with_ctx(
     let analyzed = ctx.state().optimize(&plan)?;
     debug!("analytics-core final planned:\n {analyzed}");
 
-    // Cache wren_mdl to avoid multiple clones
-    let wren_mdl = analyzed_mdl.wren_mdl();
-    let data_source = wren_mdl.data_source().unwrap_or_default();
-    let wren_dialect = WrenDialect::new(&data_source);
-    let unparser = Unparser::new(&wren_dialect).with_pretty(true);
+    // Cache analytics_mdl to avoid multiple clones
+    let analytics_mdl = analyzed_mdl.analytics_mdl();
+    let data_source = analytics_mdl.data_source().unwrap_or_default();
+    let analytics_dialect = AnalyticsDialect::new(&data_source);
+    let unparser = Unparser::new(&analytics_dialect).with_pretty(true);
     // show the planned sql
     match unparser.plan_to_sql(&analyzed) {
         Ok(stmt) => {
             // TODO: workaround to remove unnecessary catalog and schema of mdl
             // Use efficient string replacement with pre-allocated capacity
             use crate::performance::string_ops;
-            let prefix = wren_mdl.catalog_schema_prefix();
+            let prefix = analytics_mdl.catalog_schema_prefix();
             let planned = stmt.to_string();
             let replaced = string_ops::replace_efficient(&planned, prefix, "");
             info!("analytics-core planned SQL: {replaced}");
@@ -507,7 +507,7 @@ pub async fn transform_sql_with_ctx(
 /// Try to check if the fail reason is a permission denied error.
 ///
 /// In a normal exeuction flow, if a column is not allowed to be used in the model plan,
-/// it will return an column not found error because the column won't be registered in the [WrenDataSource].
+/// it will return an column not found error because the column won't be registered in the [AnalyticsDataSource].
 /// Through this function, we can check if the error is a permission denied error, then provide a more user-friendly error message.
 async fn permission_analyze(
     manifest: Manifest,
@@ -516,18 +516,18 @@ async fn permission_analyze(
     properties: SessionPropertiesRef,
 ) -> Result<()> {
     // Clone properties for new analyzed_mdl (needed for ownership)
-    let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+    let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
         manifest,
         properties.clone(),
         Mode::PermissionAnalyze,
     )?);
-    let ctx = create_wren_ctx(None);
+    let ctx = create_analytics_ctx(None);
     remote_functions.iter().try_for_each(|remote_function| {
         debug!("Registering remote function: {remote_function:?}");
         register_remote_function(&ctx, remote_function)?;
         Ok::<_, DataFusionError>(())
     })?;
-    let ctx = apply_wren_on_ctx(&ctx, analyzed_mdl, properties, Mode::PermissionAnalyze)
+    let ctx = apply_analytics_on_ctx(&ctx, analyzed_mdl, properties, Mode::PermissionAnalyze)
         .await?;
 
     let plan = match ctx.state().create_logical_plan(sql).await {
@@ -546,7 +546,7 @@ async fn permission_analyze(
         Err(e) => {
             if let DataFusionError::Context(_, ee) = &e {
                 if let DataFusionError::External(we) = ee.as_ref() {
-                    if we.downcast_ref::<WrenError>().is_some() {
+                    if we.downcast_ref::<AnalyticsError>().is_some() {
                         return Err(e);
                     }
                 }
@@ -583,8 +583,8 @@ fn register_remote_function(
     Ok(())
 }
 
-/// Analyze the decision point. It's same as the /v1/analysis/sql API in wren engine
-pub fn decision_point_analyze(_wren_mdl: Arc<WrenMDL>, _sql: &str) {}
+/// Analyze the decision point. It's same as the /v1/analysis/sql API in analytics engine
+pub fn decision_point_analyze(_analytics_mdl: Arc<AnalyticsMDL>, _sql: &str) {}
 
 /// Cheap clone of the ColumnReference
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -612,11 +612,11 @@ mod test {
     use std::sync::Arc;
 
     use crate::mdl::builder::{ColumnBuilder, ManifestBuilder, ModelBuilder};
-    use crate::mdl::context::{apply_wren_on_ctx, Mode, SessionPropertiesRef};
+    use crate::mdl::context::{apply_analytics_on_ctx, Mode, SessionPropertiesRef};
     use crate::mdl::function::RemoteFunction;
     use crate::mdl::manifest::DataSource::MySQL;
     use crate::mdl::manifest::Manifest;
-    use crate::mdl::{self, create_wren_ctx, transform_sql_with_ctx, AnalyzedWrenMDL};
+    use crate::mdl::{self, create_analytics_ctx, transform_sql_with_ctx, AnalyzedAnalyticsMDL};
     use datafusion::arrow::array::{
         ArrayRef, Int64Array, RecordBatch, StringArray, TimestampNanosecondArray,
     };
@@ -641,7 +641,7 @@ mod test {
             Ok(mdl) => mdl,
             Err(e) => return not_impl_err!("Failed to parse mdl json: {}", e),
         };
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -666,7 +666,7 @@ mod test {
             Ok(mdl) => mdl,
             Err(e) => return not_impl_err!("Failed to parse mdl json: {}", e),
         };
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -688,7 +688,7 @@ mod test {
         for sql in tests {
             println!("Original: {sql}");
             let actual = mdl::transform_sql_with_ctx(
-                &create_wren_ctx(None),
+                &create_analytics_ctx(None),
                 Arc::clone(&analyzed_mdl),
                 &[],
                 Arc::new(HashMap::new()),
@@ -713,7 +713,7 @@ mod test {
             Ok(mdl) => mdl,
             Err(e) => return not_impl_err!("Failed to parse mdl json: {e}"),
         };
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -721,7 +721,7 @@ mod test {
         let sql = "select * from test.test.customer_view";
         println!("Original: {sql}");
         let _ = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -746,14 +746,14 @@ mod test {
             Ok(mdl) => mdl,
             Err(e) => return not_impl_err!("Failed to parse mdl json: {e}"),
         };
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let sql = "select totalcost from profile";
         let result = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -764,7 +764,7 @@ mod test {
 
         let sql = "select totalcost from profile where p_sex = 'M'";
         let result = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -778,7 +778,7 @@ mod test {
 
     #[tokio::test]
     async fn test_uppercase_catalog_schema() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("customer", customer())?;
         let manifest = ManifestBuilder::new()
             .catalog("CTest")
@@ -791,14 +791,14 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let sql = r#"select * from CTest.STest.Customer"#;
         let actual = mdl::transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -819,7 +819,7 @@ mod test {
             [env!("CARGO_MANIFEST_DIR"), "tests", "data", "functions.csv"]
                 .iter()
                 .collect();
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let functions = csv::Reader::from_path(test_data)
             .unwrap()
             .into_deserialize::<RemoteFunction>()
@@ -836,7 +836,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -878,10 +878,10 @@ mod test {
 
     #[tokio::test]
     async fn test_unicode_remote_column_name() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("artist", artist())?;
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -910,14 +910,14 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select * from wren.test.artist"#;
+        let sql = r#"select * from analytics.test.artist"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -929,9 +929,9 @@ mod test {
         );
         ctx.sql(&actual).await?.show().await?;
 
-        let sql = r#"select group from wren.test.artist"#;
+        let sql = r#"select group from analytics.test.artist"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -942,9 +942,9 @@ mod test {
                    @"SELECT artist.\"group\" FROM (SELECT artist.\"group\" FROM (SELECT __source.\"組別\" AS \"group\" FROM artist AS __source) AS artist) AS artist");
         ctx.sql(&actual).await?.show().await?;
 
-        let sql = r#"select subscribe_plus from wren.test.artist"#;
+        let sql = r#"select subscribe_plus from analytics.test.artist"#;
         let actual = mdl::transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -958,10 +958,10 @@ mod test {
 
     #[tokio::test]
     async fn test_invalid_infer_remote_table() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("artist", artist())?;
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -980,14 +980,14 @@ mod test {
             )
             .build();
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select name_append from wren.test.artist"#;
+        let sql = r#"select name_append from analytics.test.artist"#;
         let _ = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1001,9 +1001,9 @@ mod test {
             )
         });
 
-        let sql = r#"select lower_name from wren.test.artist"#;
+        let sql = r#"select lower_name from analytics.test.artist"#;
         let _ = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1021,10 +1021,10 @@ mod test {
 
     #[tokio::test]
     async fn test_query_hidden_column() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("artist", artist())?;
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -1039,14 +1039,14 @@ mod test {
             )
             .build();
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select 串接名字 from wren.test.artist"#;
+        let sql = r#"select 串接名字 from analytics.test.artist"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1055,9 +1055,9 @@ mod test {
         .await?;
         assert_snapshot!(actual,
                    @"SELECT artist.\"串接名字\" FROM (SELECT artist.\"串接名字\" FROM (SELECT __source.\"名字\" || __source.\"名字\" AS \"串接名字\" FROM artist AS __source) AS artist) AS artist");
-        let sql = r#"select * from wren.test.artist"#;
+        let sql = r#"select * from analytics.test.artist"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1067,9 +1067,9 @@ mod test {
         assert_snapshot!(actual,
                    @"SELECT artist.\"串接名字\" FROM (SELECT artist.\"串接名字\" FROM (SELECT __source.\"名字\" || __source.\"名字\" AS \"串接名字\" FROM artist AS __source) AS artist) AS artist");
 
-        let sql = r#"select "名字" from wren.test.artist"#;
+        let sql = r#"select "名字" from analytics.test.artist"#;
         let _ = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1078,7 +1078,7 @@ mod test {
             .await.map_err(|e| {
                 assert_snapshot!(
                     e.to_string(),
-                    @"Schema error: No field named \"名字\". Valid fields are wren.test.artist.\"串接名字\"."
+                    @"Schema error: No field named \"名字\". Valid fields are analytics.test.artist.\"串接名字\"."
                 )
             });
         Ok(())
@@ -1088,8 +1088,8 @@ mod test {
     async fn test_disable_simplify_expression() -> Result<()> {
         let sql = "select current_date";
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
-            Arc::new(AnalyzedWrenMDL::default()),
+            &create_analytics_ctx(None),
+            Arc::new(AnalyzedAnalyticsMDL::default()),
             &[],
             Arc::new(HashMap::new()),
             sql,
@@ -1102,7 +1102,7 @@ mod test {
     #[tokio::test]
     async fn test_disable_decorrelate_predicate_subquery() -> Result<()> {
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -1112,14 +1112,14 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select * from wren.test.artist where 名字 in (SELECT 名字 FROM wren.test.artist)"#;
+        let sql = r#"select * from analytics.test.artist where 名字 in (SELECT 名字 FROM analytics.test.artist)"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1134,10 +1134,10 @@ mod test {
     /// This test will be failed if the `出道時間` is not inferred as a timestamp column correctly.
     #[tokio::test]
     async fn test_infer_timestamp_column() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("artist", artist())?;
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -1147,14 +1147,14 @@ mod test {
             )
             .build();
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select current_date > "出道時間" from wren.test.artist"#;
+        let sql = r#"select current_date > "出道時間" from analytics.test.artist"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1169,9 +1169,9 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_count_wildcard_rule() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         let sql = "select count(*) from (select 1)";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1188,7 +1188,7 @@ mod test {
     }
 
     async fn assert_sql_valid_executable(sql: &str) -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         // To roundtrip testing, we should register the mock table for the planned sql.
         ctx.register_batch("orders", orders())?;
         ctx.register_batch("customer", customer())?;
@@ -1210,8 +1210,8 @@ mod test {
 
     #[tokio::test]
     async fn test_mysql_style_interval() -> Result<()> {
-        let ctx = create_wren_ctx(None);
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let ctx = create_analytics_ctx(None);
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         let sql = "select interval 1 day";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1252,9 +1252,9 @@ mod test {
 
     #[tokio::test]
     async fn test_unnest_as_table_factor() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new().build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1273,7 +1273,7 @@ mod test {
         let manifest = ManifestBuilder::new()
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1293,8 +1293,8 @@ mod test {
 
     #[tokio::test]
     async fn test_simplify_timestamp() -> Result<()> {
-        let ctx = create_wren_ctx(None);
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let ctx = create_analytics_ctx(None);
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         let sql = "select timestamp '2011-01-01 18:00:00 +08:00'";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1322,10 +1322,10 @@ mod test {
     #[tokio::test]
     async fn test_eval_timestamp_with_session_timezone() -> Result<()> {
         let mut headers = HashMap::new();
-        headers.insert("x-wren-timezone".to_string(), Some("+08:00".to_string()));
+        headers.insert("x-analytics-timezone".to_string(), Some("+08:00".to_string()));
         let headers_ref = Arc::new(headers);
-        let ctx = create_wren_ctx(None);
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let ctx = create_analytics_ctx(None);
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         let sql = "select timestamp '2011-01-01 18:00:00'";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1350,14 +1350,14 @@ mod test {
         // TIMESTAMP WITH TIME ZONE will be converted to the session timezone
         assert_snapshot!(actual, @"SELECT CAST('2011-01-01 10:00:00' AS TIMESTAMP) AS \"Utf8(\"\"2011-01-01 18:00:00\"\")\"");
 
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let mut headers = HashMap::new();
         headers.insert(
-            "x-wren-timezone".to_string(),
+            "x-analytics-timezone".to_string(),
             Some("America/New_York".to_string()),
         );
         let headers_ref = Arc::new(headers);
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         // TIMESTAMP WITH TIME ZONE will be converted to the session timezone with daylight saving (UTC -5)
         let sql = "select timestamp with time zone '2024-01-15 18:00:00'";
         let actual = transform_sql_with_ctx(
@@ -1384,8 +1384,8 @@ mod test {
 
         let headers = HashMap::new();
         let headers_ref = Arc::new(headers);
-        let ctx = create_wren_ctx(None);
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::default());
+        let ctx = create_analytics_ctx(None);
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::default());
         let sql = "select timestamp with time zone '2011-01-01 18:00:00' - timestamp with time zone '2011-01-01 10:00:00'";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1403,10 +1403,10 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_pushdown_filter() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("artist", artist())?;
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("artist")
@@ -1425,14 +1425,14 @@ mod test {
             )
             .build();
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = r#"select count(*) from wren.test.artist where cast(cast_timestamptz as timestamp) > timestamp '2011-01-01 21:00:00'"#;
+        let sql = r#"select count(*) from analytics.test.artist where cast(cast_timestamptz as timestamp) > timestamp '2011-01-01 21:00:00'"#;
         let actual = transform_sql_with_ctx(
-            &create_wren_ctx(None),
+            &create_analytics_ctx(None),
             Arc::clone(&analyzed_mdl),
             &[],
             Arc::new(HashMap::new()),
@@ -1450,7 +1450,7 @@ mod test {
 
     #[tokio::test]
     async fn test_register_timestamptz() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("timestamp_table", timestamp_table())?;
         let provider = ctx
             .catalog("datafusion")
@@ -1466,7 +1466,7 @@ mod test {
             Arc::clone(&provider),
         );
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("timestamp_table")
@@ -1478,16 +1478,16 @@ mod test {
             .build();
 
         let analyzed_mdl =
-            Arc::new(AnalyzedWrenMDL::analyze_with_tables(manifest, registers)?);
+            Arc::new(AnalyzedAnalyticsMDL::analyze_with_tables(manifest, registers)?);
         let properties_ref = Arc::new(HashMap::new());
-        let ctx = apply_wren_on_ctx(
+        let ctx = apply_analytics_on_ctx(
             &ctx,
             Arc::clone(&analyzed_mdl),
             properties_ref,
             Mode::LocalRuntime,
         )
         .await?;
-        let sql = r#"select arrow_typeof(timestamp_col), arrow_typeof(timestamptz_col) from wren.test.timestamp_table limit 1"#;
+        let sql = r#"select arrow_typeof(timestamp_col), arrow_typeof(timestamptz_col) from analytics.test.timestamp_table limit 1"#;
         let result = ctx.sql(sql).await?.collect().await?;
         assert_snapshot!(batches_to_string(&result), @r#"
         +---------------------------------------------+-----------------------------------------------+
@@ -1501,7 +1501,7 @@ mod test {
 
     #[tokio::test]
     async fn test_coercion_timestamptz() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         ctx.register_batch("timestamp_table", timestamp_table())?;
         for timezone_type in [
             "timestamptz",
@@ -1509,7 +1509,7 @@ mod test {
             "timestamp_with_time_zone",
         ] {
             let manifest = ManifestBuilder::new()
-                .catalog("wren")
+                .catalog("analytics")
                 .schema("test")
                 .model(
                     ModelBuilder::new("timestamp_table")
@@ -1521,14 +1521,14 @@ mod test {
                         .build(),
                 )
                 .build();
-            let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+            let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
                 manifest,
                 Arc::new(HashMap::default()),
                 Mode::Unparse,
             )?);
-            let sql = r#"select timestamp_col = timestamptz_col from wren.test.timestamp_table"#;
+            let sql = r#"select timestamp_col = timestamptz_col from analytics.test.timestamp_table"#;
             let actual = transform_sql_with_ctx(
-                &create_wren_ctx(None),
+                &create_analytics_ctx(None),
                 Arc::clone(&analyzed_mdl),
                 &[],
                 Arc::new(HashMap::new()),
@@ -1541,9 +1541,9 @@ mod test {
                        (SELECT __source.timestamp_col AS timestamp_col, __source.timestamptz_col AS timestamptz_col \
                        FROM datafusion.\"public\".timestamp_table AS __source) AS timestamp_table) AS timestamp_table");
 
-            let sql = r#"select timestamptz_col > cast('2011-01-01 18:00:00' as TIMESTAMP WITH TIME ZONE) from wren.test.timestamp_table"#;
+            let sql = r#"select timestamptz_col > cast('2011-01-01 18:00:00' as TIMESTAMP WITH TIME ZONE) from analytics.test.timestamp_table"#;
             let actual = transform_sql_with_ctx(
-                &create_wren_ctx(None),
+                &create_analytics_ctx(None),
                 Arc::clone(&analyzed_mdl),
                 &[],
                 Arc::new(HashMap::new()),
@@ -1555,9 +1555,9 @@ mod test {
               "SELECT timestamp_table.timestamptz_col > CAST(CAST('2011-01-01 18:00:00' AS TIMESTAMP) AS TIMESTAMP WITH TIME ZONE) FROM (SELECT timestamp_table.timestamptz_col FROM (SELECT __source.timestamptz_col AS timestamptz_col FROM datafusion.\"public\".timestamp_table AS __source) AS timestamp_table) AS timestamp_table"
 );
 
-            let sql = r#"select timestamptz_col > '2011-01-01 18:00:00' from wren.test.timestamp_table"#;
+            let sql = r#"select timestamptz_col > '2011-01-01 18:00:00' from analytics.test.timestamp_table"#;
             let actual = transform_sql_with_ctx(
-                &create_wren_ctx(None),
+                &create_analytics_ctx(None),
                 Arc::clone(&analyzed_mdl),
                 &[],
                 Arc::new(HashMap::new()),
@@ -1570,9 +1570,9 @@ mod test {
                        FROM (SELECT timestamp_table.timestamptz_col FROM (SELECT __source.timestamptz_col AS timestamptz_col \
                        FROM datafusion.\"public\".timestamp_table AS __source) AS timestamp_table) AS timestamp_table");
 
-            let sql = r#"select timestamp_col > cast('2011-01-01 18:00:00' as TIMESTAMP WITH TIME ZONE) from wren.test.timestamp_table"#;
+            let sql = r#"select timestamp_col > cast('2011-01-01 18:00:00' as TIMESTAMP WITH TIME ZONE) from analytics.test.timestamp_table"#;
             let actual = transform_sql_with_ctx(
-                &create_wren_ctx(None),
+                &create_analytics_ctx(None),
                 Arc::clone(&analyzed_mdl),
                 &[],
                 Arc::new(HashMap::new()),
@@ -1588,9 +1588,9 @@ mod test {
 
     #[tokio::test]
     async fn test_list() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("list_table")
@@ -1599,12 +1599,12 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = "select list_col[1] from wren.test.list_table";
+        let sql = "select list_col[1] from analytics.test.list_table";
         let actual = transform_sql_with_ctx(
             &ctx,
             Arc::clone(&analyzed_mdl),
@@ -1620,9 +1620,9 @@ mod test {
 
     #[tokio::test]
     async fn test_struct() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("struct_table")
@@ -1644,12 +1644,12 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = "select struct_col.float_field from wren.test.struct_table";
+        let sql = "select struct_col.float_field from analytics.test.struct_table";
         let actual = transform_sql_with_ctx(
             &ctx,
             Arc::clone(&analyzed_mdl),
@@ -1665,7 +1665,7 @@ mod test {
         FROM struct_table AS __source) AS struct_table) AS struct_table"
         );
 
-        let sql = "select struct_array_col[1].float_field from wren.test.struct_table";
+        let sql = "select struct_array_col[1].float_field from analytics.test.struct_table";
         let actual = transform_sql_with_ctx(
             &ctx,
             Arc::clone(&analyzed_mdl),
@@ -1691,7 +1691,7 @@ mod test {
         assert_snapshot!(actual, @"SELECT {float_field: 1.0, time_field: CAST('2021-01-01 00:00:00' AS TIMESTAMP)}");
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("struct_table")
@@ -1700,12 +1700,12 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let sql = "select struct_col.float_field from wren.test.struct_table";
+        let sql = "select struct_col.float_field from analytics.test.struct_table";
         let _ = transform_sql_with_ctx(&ctx, Arc::clone(&analyzed_mdl), &[], Arc::new(HashMap::new()), sql)
             .await
             .map_err(|e| {
@@ -1719,13 +1719,13 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_common_expression_eliminate() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let sql =
             "SELECT CAST(TIMESTAMP '2021-01-01 00:00:00' as TIMESTAMP WITH TIME ZONE) = \
         CAST(TIMESTAMP '2021-01-01 00:00:00' as TIMESTAMP WITH TIME ZONE)";
         let result = transform_sql_with_ctx(
             &ctx,
-            Arc::new(AnalyzedWrenMDL::default()),
+            Arc::new(AnalyzedAnalyticsMDL::default()),
             &[],
             Arc::new(HashMap::new()),
             sql,
@@ -1738,14 +1738,14 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_eliminate_nested_union() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let sql = r#"SELECT * FROM (SELECT 1 x, 'a' y UNION ALL
     SELECT 1 x, 'b' y UNION ALL
     SELECT 2 x, 'a' y UNION ALL
     SELECT 2 x, 'c' y)"#;
         let result = transform_sql_with_ctx(
             &ctx,
-            Arc::new(AnalyzedWrenMDL::default()),
+            Arc::new(AnalyzedAnalyticsMDL::default()),
             &[],
             Arc::new(HashMap::new()),
             sql,
@@ -1764,12 +1764,12 @@ mod test {
     #[tokio::test]
     async fn test_dialect_specific_function_rewrite() -> Result<()> {
         let manifest = ManifestBuilder::default().data_source(MySQL).build();
-        let mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let sql = "SELECT trim(' abc')";
         let actual = transform_sql_with_ctx(
             &ctx,
@@ -1785,9 +1785,9 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_single_distinct_to_group_by() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -1798,7 +1798,7 @@ mod test {
             )
             .build();
         let sql = r#"SELECT c_custkey, count(distinct c_name) FROM customer GROUP BY c_custkey"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1823,9 +1823,9 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_distinct_to_group_by() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -1836,7 +1836,7 @@ mod test {
             )
             .build();
         let sql = r#"SELECT DISTINCT c_custkey, c_name FROM customer"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1858,9 +1858,9 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_scalar_subquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -1871,7 +1871,7 @@ mod test {
             )
             .build();
         let sql = r#"SELECT c_custkey, (SELECT c_name FROM customer WHERE c_custkey = 1) FROM customer"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1893,9 +1893,9 @@ mod test {
 
     #[tokio::test]
     async fn test_wildcard_where() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -1906,7 +1906,7 @@ mod test {
             )
             .build();
         let sql = r#"SELECT * FROM customer WHERE c_custkey = 1"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1930,7 +1930,7 @@ mod test {
     async fn test_uppercase_table_reference() -> Result<()> {
         let mdl_json = r#"
         {
-            "catalog": "wren",
+            "catalog": "analytics",
             "schema": "test",
             "models": [
                 {
@@ -1955,9 +1955,9 @@ mod test {
         }
         "#;
         let manifest: Manifest = serde_json::from_str(mdl_json).unwrap();
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let sql = r#"SELECT * FROM customer WHERE c_custkey = 1"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -1981,7 +1981,7 @@ mod test {
     async fn test_unicode_table_reference() -> Result<()> {
         let mdl_json = r#"
         {
-            "catalog": "wren",
+            "catalog": "analytics",
             "schema": "test",
             "models": [
                 {
@@ -2006,9 +2006,9 @@ mod test {
         }
         "#;
         let manifest: Manifest = serde_json::from_str(mdl_json).unwrap();
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let sql = r#"SELECT * FROM customer WHERE c_custkey = 1"#;
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2030,11 +2030,11 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_with_requried_properties() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2049,7 +2049,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2085,7 +2085,7 @@ mod test {
         }
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2113,7 +2113,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2174,7 +2174,7 @@ mod test {
         }
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2192,7 +2192,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2242,11 +2242,11 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_with_optional_properties() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2264,7 +2264,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2286,7 +2286,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2301,7 +2301,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2322,7 +2322,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2343,7 +2343,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2374,7 +2374,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2399,7 +2399,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2433,10 +2433,10 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_on_calculated_field() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2480,7 +2480,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2502,7 +2502,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2567,7 +2567,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2604,9 +2604,9 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_alias_model() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2635,7 +2635,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -2667,9 +2667,9 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_unicode_model_column_name() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("VTU藝人")
@@ -2690,7 +2690,7 @@ mod test {
             Some("'JP'".to_string()),
         )]));
 
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::clone(&headers),
             Mode::Unparse,
@@ -2707,10 +2707,10 @@ mod test {
 
     #[tokio::test]
     async fn test_ralc_condition_contain_hidden() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2727,7 +2727,7 @@ mod test {
             .build();
 
         let headers = SessionPropertiesRef::default();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2755,10 +2755,10 @@ mod test {
 
     #[tokio::test]
     async fn test_clac_with_required_properties() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2781,7 +2781,7 @@ mod test {
             "session_level".to_string(),
             Some("1".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2797,7 +2797,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2808,7 +2808,7 @@ mod test {
         );
 
         let headers = Arc::new(HashMap::default());
-        match AnalyzedWrenMDL::analyze(manifest.clone(), headers.clone(), Mode::Unparse) {
+        match AnalyzedAnalyticsMDL::analyze(manifest.clone(), headers.clone(), Mode::Unparse) {
             Err(e) => {
                 assert_snapshot!(
                     e.to_string(),
@@ -2822,7 +2822,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2852,9 +2852,9 @@ mod test {
 
     #[tokio::test]
     async fn test_clac_permission_denied() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2896,7 +2896,7 @@ mod test {
             "session_level".to_string(),
             Some("1".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2925,9 +2925,9 @@ mod test {
 
     #[tokio::test]
     async fn test_calc_primary_key() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2951,7 +2951,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -2967,10 +2967,10 @@ mod test {
 
     #[tokio::test]
     async fn test_clac_with_optional_properties() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -2996,7 +2996,7 @@ mod test {
             "session_level".to_string(),
             Some("1".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3012,7 +3012,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3024,7 +3024,7 @@ mod test {
 
         // test the rule is applied the default value if the optional property is None
         let headers = Arc::new(HashMap::default());
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3035,7 +3035,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3061,7 +3061,7 @@ mod test {
 
         // test the rule is skipped when the optional property is None
         let headers = Arc::new(HashMap::default());
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3075,10 +3075,10 @@ mod test {
 
     #[tokio::test]
     async fn test_clac_on_calculated_field() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3106,7 +3106,7 @@ mod test {
             "session_level".to_string(),
             Some("1".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3122,7 +3122,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3157,7 +3157,7 @@ mod test {
         );
 
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3206,7 +3206,7 @@ mod test {
             "session_level".to_string(),
             Some("0".to_string()),
         )]));
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest.clone(),
             headers.clone(),
             Mode::Unparse,
@@ -3227,11 +3227,11 @@ mod test {
 
     #[tokio::test]
     async fn test_rlac_case_insensitive() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3246,7 +3246,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3265,11 +3265,11 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_eliminate_limit() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3279,7 +3279,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3295,11 +3295,11 @@ mod test {
 
     #[tokio::test]
     async fn test_default_nulls_last() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3309,7 +3309,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3356,9 +3356,9 @@ mod test {
 
     #[tokio::test]
     async fn test_extract_roundtrip_bigquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("orders")
@@ -3368,7 +3368,7 @@ mod test {
             )
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3415,9 +3415,9 @@ mod test {
 
     #[tokio::test]
     async fn test_date_diff_bigquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("date_table")
@@ -3435,7 +3435,7 @@ mod test {
             )
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3499,9 +3499,9 @@ mod test {
 
     #[tokio::test]
     async fn test_window_function_frame() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("orders")
@@ -3512,7 +3512,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3536,9 +3536,9 @@ mod test {
 
     #[tokio::test]
     async fn test_window_functions_without_frame_bigquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("orders")
@@ -3550,7 +3550,7 @@ mod test {
             )
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3566,9 +3566,9 @@ mod test {
 
     #[tokio::test]
     async fn test_cte_used_in_scalar_subquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("orders")
@@ -3585,7 +3585,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3609,9 +3609,9 @@ mod test {
 
     #[tokio::test]
     async fn test_ambiguous_table_name() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3630,7 +3630,7 @@ mod test {
             .build();
 
         let headers = Arc::new(HashMap::default());
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::clone(&headers),
             Mode::Unparse,
@@ -3663,7 +3663,7 @@ mod test {
             }
             Err(e) => assert_snapshot!(
                 e.to_string(),
-                @"Error during planning: table 'wren.test.CUSTOMER' not found"
+                @"Error during planning: table 'analytics.test.CUSTOMER' not found"
             ),
         }
 
@@ -3672,11 +3672,11 @@ mod test {
 
     #[tokio::test]
     async fn test_unicode_literal() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::default().build();
         let properties = SessionPropertiesRef::default();
-        let mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::clone(&properties),
             Mode::Unparse,
@@ -3691,7 +3691,7 @@ mod test {
             .data_source(DataSource::MSSQL)
             .build();
         let properties = SessionPropertiesRef::default();
-        let mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::clone(&properties),
             Mode::Unparse,
@@ -3706,11 +3706,11 @@ mod test {
 
     #[tokio::test]
     async fn test_compatible_type() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         let manifest = ManifestBuilder::default().build();
         let properties = SessionPropertiesRef::default();
-        let mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::clone(&properties),
             Mode::Unparse,
@@ -3725,9 +3725,9 @@ mod test {
 
     #[tokio::test]
     async fn test_trim_function_bigquery() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3738,7 +3738,7 @@ mod test {
             )
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3752,7 +3752,7 @@ mod test {
 
         // normal data source will be transformed to btrim
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3762,7 +3762,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3778,9 +3778,9 @@ mod test {
 
     #[tokio::test]
     async fn test_to_char() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3797,7 +3797,7 @@ mod test {
             )
             .data_source(DataSource::BigQuery)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3820,11 +3820,11 @@ mod test {
 
     #[tokio::test]
     async fn test_disable_eliminate_cross_join() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
 
         // test required property
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("customer")
@@ -3841,7 +3841,7 @@ mod test {
                     .build(),
             )
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,
@@ -3857,9 +3857,9 @@ mod test {
 
     #[tokio::test]
     async fn test_snowflake_unnest() -> Result<()> {
-        let ctx = create_wren_ctx(None);
+        let ctx = create_analytics_ctx(None);
         let manifest = ManifestBuilder::new()
-            .catalog("wren")
+            .catalog("analytics")
             .schema("test")
             .model(
                 ModelBuilder::new("orders")
@@ -3869,7 +3869,7 @@ mod test {
             )
             .data_source(DataSource::Snowflake)
             .build();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             manifest,
             Arc::new(HashMap::default()),
             Mode::Unparse,

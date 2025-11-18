@@ -8,13 +8,13 @@ async def test_metadata_list_tables(client, connection_info):
     )
     assert response.status_code == 200
 
-    result = next(filter(lambda x: x["name"] == "workspace.wren.t1", response.json()))
-    assert result["name"] == "workspace.wren.t1"
+    result = next(filter(lambda x: x["name"] == "workspace.analytics.t1", response.json()))
+    assert result["name"] == "workspace.analytics.t1"
     assert result["primaryKey"] is not None
     assert result["description"] == "This is a table comment"
     assert result["properties"] == {
         "catalog": "workspace",
-        "schema": "wren",
+        "schema": "analytics",
         "table": "t1",
         "path": None,
     }
@@ -40,9 +40,9 @@ async def test_metadata_list_constraints(client, connection_info):
     )
     assert result["constraintName"] == "t2_t1_id_t1_id"
     assert result["constraintType"] == "FOREIGN KEY"
-    assert result["constraintTable"] == "workspace.wren.t2"
+    assert result["constraintTable"] == "workspace.analytics.t2"
     assert result["constraintColumn"] == "t1_id"
-    assert result["constraintedTable"] == "workspace.wren.t1"
+    assert result["constraintedTable"] == "workspace.analytics.t1"
     assert result["constraintedColumn"] == "id"
 
     assert response.status_code == 200

@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use crate::logical_plan::utils::{from_qualified_name, try_map_data_type};
 use crate::mdl::manifest::Model;
-use crate::mdl::{AnalyzedWrenMDL, ColumnReference, Dataset, SessionStateRef};
+use crate::mdl::{AnalyzedAnalyticsMDL, ColumnReference, Dataset, SessionStateRef};
 
 pub fn to_expr_queue(column: Column) -> VecDeque<String> {
     column.name.split('.').map(String::from).collect()
@@ -30,7 +30,7 @@ where
 }
 
 /// Collect all identifiers in the expression. The output [Column] is unqualified.
-/// Because the number of the CompoundIdentifier elements length would be greater than 3 in Wren Core,
+/// Because the number of the CompoundIdentifier elements length would be greater than 3 in Analytics Core,
 /// we use the unqualified [Column] to represent the [CompoundIdentifier] in the expression.
 ///
 /// For example, a [CompoundIdentifier] with 3 elements: `orders.customer.name` would be represented as `"orders.customer.name"`.
@@ -76,20 +76,20 @@ pub fn qualify_name_from_column_name(column: &Column) -> String {
 }
 
 /// Create the Logical Expr for the calculated field
-pub fn create_wren_calculated_field_expr(
+pub fn create_analytics_calculated_field_expr(
     column_rf: ColumnReference,
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state: SessionStateRef,
 ) -> Result<Expr> {
     if !column_rf.column.is_calculated {
         return plan_err!("Column is not calculated: {}", column_rf.column.name);
     }
     let qualified_col = from_qualified_name(
-        &analyzed_wren_mdl.wren_mdl,
+        &analyzed_analytics_mdl.analytics_mdl,
         column_rf.dataset.name(),
         column_rf.column.name(),
     );
-    let Some(required_fields) = analyzed_wren_mdl
+    let Some(required_fields) = analyzed_analytics_mdl
         .lineage
         .required_fields_map
         .get(&qualified_col)
@@ -127,7 +127,7 @@ pub fn create_wren_calculated_field_expr(
 
     let Some(schema) = models
         .into_iter()
-        .map(|m| analyzed_wren_mdl.wren_mdl().get_model(&m))
+        .map(|m| analyzed_analytics_mdl.analytics_mdl().get_model(&m))
         .filter(|m| m.is_some())
         .map(|m| Dataset::Model(m.unwrap()))
         .map(|m| m.to_qualified_schema(true))
@@ -143,12 +143,12 @@ pub fn create_wren_calculated_field_expr(
 pub(crate) fn create_remote_expr_for_model(
     expr: &str,
     model: Arc<Model>,
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state: SessionStateRef,
 ) -> Result<Expr> {
     let dataset = Dataset::Model(model);
     let schema = dataset.to_remote_schema(
-        Some(analyzed_wren_mdl.wren_mdl().get_register_tables()),
+        Some(analyzed_analytics_mdl.analytics_mdl().get_register_tables()),
         Arc::clone(&session_state),
     )?;
     let session_state = session_state.read();
@@ -157,7 +157,7 @@ pub(crate) fn create_remote_expr_for_model(
 }
 
 /// Create the Logical Expr for the remote column.
-pub(crate) fn create_wren_expr_for_model(
+pub(crate) fn create_analytics_expr_for_model(
     expr: &str,
     model: Arc<Model>,
     session_state: SessionStateRef,
@@ -269,32 +269,32 @@ mod tests {
     use crate::logical_plan::utils::from_qualified_name;
     use crate::mdl::context::Mode;
     use crate::mdl::manifest::Manifest;
-    use crate::mdl::AnalyzedWrenMDL;
+    use crate::mdl::AnalyzedAnalyticsMDL;
 
     #[test]
-    fn test_create_wren_expr() -> Result<()> {
+    fn test_create_analytics_expr() -> Result<()> {
         let test_data: PathBuf =
             [env!("CARGO_MANIFEST_DIR"), "tests", "data", "mdl.json"]
                 .iter()
                 .collect();
         let mdl_json = fs::read_to_string(test_data.as_path()).unwrap();
         let mdl = serde_json::from_str::<Manifest>(&mdl_json).unwrap();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let ctx = SessionContext::new();
         let column_rf = analyzed_mdl
-            .wren_mdl
+            .analytics_mdl
             .qualified_references
             .get(&from_qualified_name(
-                &analyzed_mdl.wren_mdl,
+                &analyzed_mdl.analytics_mdl,
                 "orders",
                 "customer_name",
             ))
             .unwrap();
-        let expr = super::create_wren_calculated_field_expr(
+        let expr = super::create_analytics_calculated_field_expr(
             column_rf.clone(),
             analyzed_mdl.clone(),
             ctx.state_ref(),
@@ -304,29 +304,29 @@ mod tests {
     }
 
     #[test]
-    fn test_create_wren_expr_non_relationship() -> Result<()> {
+    fn test_create_analytics_expr_non_relationship() -> Result<()> {
         let test_data: PathBuf =
             [env!("CARGO_MANIFEST_DIR"), "tests", "data", "mdl.json"]
                 .iter()
                 .collect();
         let mdl_json = fs::read_to_string(test_data.as_path()).unwrap();
         let mdl = serde_json::from_str::<Manifest>(&mdl_json).unwrap();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let ctx = SessionContext::new();
         let column_rf = analyzed_mdl
-            .wren_mdl
+            .analytics_mdl
             .qualified_references
             .get(&from_qualified_name(
-                &analyzed_mdl.wren_mdl,
+                &analyzed_mdl.analytics_mdl,
                 "orders",
                 "orderkey_plus_custkey",
             ))
             .unwrap();
-        let expr = super::create_wren_calculated_field_expr(
+        let expr = super::create_analytics_calculated_field_expr(
             column_rf.clone(),
             analyzed_mdl,
             ctx.state_ref(),
@@ -357,21 +357,21 @@ mod tests {
     }
 
     #[test]
-    fn test_create_wren_expr_for_model() -> Result<()> {
+    fn test_create_analytics_expr_for_model() -> Result<()> {
         let test_data: PathBuf =
             [env!("CARGO_MANIFEST_DIR"), "tests", "data", "mdl.json"]
                 .iter()
                 .collect();
         let mdl_json = fs::read_to_string(test_data.as_path()).unwrap();
         let mdl = serde_json::from_str::<Manifest>(&mdl_json).unwrap();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let ctx = SessionContext::new();
-        let model = analyzed_mdl.wren_mdl().get_model("customer").unwrap();
-        let expr = super::create_wren_expr_for_model(
+        let model = analyzed_mdl.analytics_mdl().get_model("customer").unwrap();
+        let expr = super::create_analytics_expr_for_model(
             "c_name",
             Arc::clone(&model),
             ctx.state_ref(),
@@ -388,13 +388,13 @@ mod tests {
                 .collect();
         let mdl_json = fs::read_to_string(test_data.as_path()).unwrap();
         let mdl = serde_json::from_str::<Manifest>(&mdl_json).unwrap();
-        let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze(
+        let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze(
             mdl,
             Arc::new(HashMap::default()),
             Mode::Unparse,
         )?);
         let ctx = SessionContext::new();
-        let model = analyzed_mdl.wren_mdl().get_model("customer").unwrap();
+        let model = analyzed_mdl.analytics_mdl().get_model("customer").unwrap();
         let expr = super::create_remote_expr_for_model(
             "c_name",
             Arc::clone(&model),

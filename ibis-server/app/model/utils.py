@@ -11,7 +11,7 @@ def init_duckdb_s3(
     connection: DuckDBPyConnection, connection_info: S3FileConnectionInfo
 ):
     create_secret = f"""
-    CREATE SECRET wren_s3 (
+    CREATE SECRET analytics_s3 (
         TYPE S3,
         KEY_ID '{connection_info.access_key.get_secret_value()}',
         SECRET '{connection_info.secret_key.get_secret_value()}',
@@ -30,7 +30,7 @@ def init_duckdb_minio(
     connection: DuckDBPyConnection, connection_info: MinioFileConnectionInfo
 ):
     create_secret = f"""
-    CREATE SECRET wren_minio (
+    CREATE SECRET analytics_minio (
         TYPE S3,
         KEY_ID '{connection_info.access_key.get_secret_value()}',
         SECRET '{connection_info.secret_key.get_secret_value()}',
@@ -54,7 +54,7 @@ def init_duckdb_gcs(
     connection: DuckDBPyConnection, connection_info: GcsFileConnectionInfo
 ):
     create_secret = f"""
-    CREATE SECRET wren_gcs (
+    CREATE SECRET analytics_gcs (
         TYPE GCS,
         KEY_ID '{connection_info.key_id.get_secret_value()}',
         SECRET '{connection_info.secret_key.get_secret_value()}'

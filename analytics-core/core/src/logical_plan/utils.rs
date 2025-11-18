@@ -1,7 +1,7 @@
 use crate::mdl::lineage::DatasetLink;
 use crate::mdl::manifest::Column;
 use crate::mdl::utils::quoted;
-use crate::mdl::{manifest::Model, WrenMDL};
+use crate::mdl::{manifest::Model, AnalyticsMDL};
 use crate::mdl::{Dataset, SessionStateRef};
 use datafusion::arrow::datatypes::{
     DataType, Field, IntervalUnit, Schema, SchemaBuilder, SchemaRef, TimeUnit,
@@ -119,7 +119,7 @@ pub fn map_data_type(data_type: &str) -> Result<DataType> {
         return create_struct_type(lower_data_type);
     }
     let result = match lower_data_type {
-        // Wren Definition Types
+        // Analytics Definition Types
         "bool" | "boolean" => DataType::Boolean,
         "tinyint" => DataType::Int8,
         "utinyint" => DataType::UInt8,
@@ -251,7 +251,7 @@ pub fn create_schema(columns: Vec<Arc<Column>>) -> Result<SchemaRef> {
 
 pub fn create_remote_table_source(
     model: Arc<Model>,
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     session_state_ref: SessionStateRef,
 ) -> Result<Arc<dyn TableSource>> {
     if let Some(table_provider) = mdl.get_table(model.table_reference()) {
@@ -282,11 +282,11 @@ pub fn format_qualified_name(
 }
 
 pub fn from_qualified_name(
-    wren_mdl: &WrenMDL,
+    analytics_mdl: &AnalyticsMDL,
     dataset: &str,
     column: &str,
 ) -> datafusion::common::Column {
-    from_qualified_name_str(wren_mdl.catalog(), wren_mdl.schema(), dataset, column)
+    from_qualified_name_str(analytics_mdl.catalog(), analytics_mdl.schema(), dataset, column)
 }
 
 pub fn from_qualified_name_str(
@@ -308,7 +308,7 @@ pub fn print_graph(graph: &Graph<Dataset, DatasetLink>) {
 
 /// Check if the table reference belongs to the mdl
 pub fn belong_to_mdl(
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     table_reference: TableReference,
     session: SessionStateRef,
 ) -> bool {

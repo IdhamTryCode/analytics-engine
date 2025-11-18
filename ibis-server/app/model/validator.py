@@ -9,7 +9,7 @@ from analytics_core import (
 
 from app.mdl.rewriter import Rewriter
 from app.model.connector import Connector
-from app.model.error import ErrorCode, ErrorPhase, WrenError
+from app.model.error import ErrorCode, ErrorPhase, AnalyticsError
 from app.util import base64_to_dict
 
 rules = ["column_is_valid", "relationship_is_valid", "rlac_condition_syntax_is_valid"]
@@ -22,16 +22,16 @@ class Validator:
 
     async def validate(self, rule: str, parameters: dict, manifest_str: str):
         if rule not in rules:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_RULE_NOT_FOUND,
                 f"The rule `{rule}` is not in the rules, rules: {rules}",
             )
         try:
             await getattr(self, f"_validate_{rule}")(parameters, manifest_str)
-        except WrenError:
+        except AnalyticsError:
             raise
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR, str(e), phase=ErrorPhase.VALIDATION
             ) from e
 
@@ -41,13 +41,13 @@ class Validator:
         model_name = parameters.get("modelName")
         column_name = parameters.get("columnName")
         if model_name is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "modelName is required",
                 phase=ErrorPhase.VALIDATION,
             )
         if column_name is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "columnName is required",
                 phase=ErrorPhase.VALIDATION,
@@ -58,7 +58,7 @@ class Validator:
             rewritten_sql = await self.rewriter.rewrite(sql)
             self.connector.dry_run(rewritten_sql)
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR, str(e), phase=ErrorPhase.VALIDATION
             ) from e
 
@@ -67,7 +67,7 @@ class Validator:
     ):
         relationship_name = parameters.get("relationshipName")
         if relationship_name is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "relationshipName is required",
                 phase=ErrorPhase.VALIDATION,
@@ -80,7 +80,7 @@ class Validator:
         )
 
         if len(relationship) == 0:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 f"Relationship {relationship_name} not found in manifest",
                 phase=ErrorPhase.VALIDATION,
@@ -138,7 +138,7 @@ class Validator:
                     joinexist.result is_related
                 FROM joinexist"""
             else:
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.VALIDATION_PARAMETER_ERROR,
                     f"Unknown relationship type: {relationship_type}",
                     phase=ErrorPhase.VALIDATION,
@@ -169,15 +169,15 @@ class Validator:
             rewritten_sql = await self.rewriter.rewrite(sql)
             result = self.connector.query(rewritten_sql, limit=1).to_pandas()
             if not result.get("result").get(0):
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.VALIDATION_ERROR,
                     f"Relationship {relationship_name} is not valid: {format_result(result)}",
                     phase=ErrorPhase.VALIDATION,
                 )
-        except WrenError:
+        except AnalyticsError:
             raise
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_INTERNAL_ERROR, str(e), phase=ErrorPhase.VALIDATION
             ) from e
 
@@ -185,19 +185,19 @@ class Validator:
         self, parameters: dict, manifest_str: str
     ):
         if parameters.get("modelName") is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "modelName is required",
                 phase=ErrorPhase.VALIDATION,
             )
         if parameters.get("requiredProperties") is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "requiredProperties is required",
                 phase=ErrorPhase.VALIDATION,
             )
         if parameters.get("condition") is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 "condition is required",
                 phase=ErrorPhase.VALIDATION,
@@ -225,7 +225,7 @@ class Validator:
         manifest = to_manifest(manifest_str)
         model = manifest.get_model(model_name)
         if model is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 f"Model {model_name} not found in manifest",
                 phase=ErrorPhase.VALIDATION,
@@ -234,14 +234,14 @@ class Validator:
         try:
             validate_rlac_rule(rlac, model)
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_ERROR, str(e), phase=ErrorPhase.VALIDATION
             )
 
     def _get_model(self, manifest, model_name):
         models = list(filter(lambda m: m["name"] == model_name, manifest["models"]))
         if len(models) == 0:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.VALIDATION_PARAMETER_ERROR,
                 f"Model {model_name} not found in manifest",
                 phase=ErrorPhase.VALIDATION,

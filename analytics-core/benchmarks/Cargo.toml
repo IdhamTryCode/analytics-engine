@@ -1,5 +1,5 @@
 [package]
-name = "wren-benchmarks"
+name = "analytics-benchmarks"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -10,7 +10,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [lib]
-name = "wren_benchmarks"
+name = "analytics_benchmarks"
 path = "src/lib.rs"
 
 [dependencies]

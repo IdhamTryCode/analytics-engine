@@ -29,17 +29,17 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
-      - name: Start Wren JAVA engine
+      - name: Start Analytics JAVA engine
         working-directory: ./analytics-core-legacy
         run: |
           mkdir etc
           echo "node.environment=production" >> etc/config.properties
-          echo "wren.directory=./etc/mdl" >> etc/config.properties
-          echo "wren.experimental-enable-dynamic-fields=true" >> etc/config.properties
+          echo "analytics.directory=./etc/mdl" >> etc/config.properties
+          echo "analytics.experimental-enable-dynamic-fields=true" >> etc/config.properties
           ./mvnw clean install -B -DskipTests -P exec-jar
           java -Dconfig=etc/config.properties \
                 --add-opens=java.base/java.nio=ALL-UNNAMED \
-                -jar ./wren-server/target/wren-server-*-executable.jar &
+                -jar ./analytics-server/target/analytics-server-*-executable.jar &
       - name: Install poetry
         run: pipx install poetry
       - uses: actions/setup-python@v5
@@ -94,7 +94,7 @@ jobs:
         if: contains(github.event.pull_request.labels.*.name, 'athena')
         env:
           ANALYTICS_ENGINE_ENDPOINT: http://localhost:8080
-          TEST_ATHENA_S3_STAGING_DIR: s3://wren-ibis-athena-dev/results/
+          TEST_ATHENA_S3_STAGING_DIR: s3://analytics-ibis-athena-dev/results/
           TEST_ATHENA_AWS_ACCESS_KEY_ID: ${{ secrets.TEST_ATHENA_AWS_ACCESS_KEY_ID }}
           TEST_ATHENA_AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_ATHENA_AWS_SECRET_ACCESS_KEY }}
         run: just test athena

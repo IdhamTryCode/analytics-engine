@@ -11,14 +11,14 @@ This document tracks the string operation optimizations made to improve performa
 ```rust
 let replaced = sql
     .to_string()
-    .replace(wren_mdl.catalog_schema_prefix(), "");
+    .replace(analytics_mdl.catalog_schema_prefix(), "");
 ```
 
 **After:**
 ```rust
 // Use efficient string replacement with pre-allocated capacity
 use crate::performance::string_ops;
-let prefix = wren_mdl.catalog_schema_prefix();
+let prefix = analytics_mdl.catalog_schema_prefix();
 let replaced = if sql.contains(prefix) {
     string_ops::replace_efficient(&sql, prefix, "")
 } else {
@@ -54,7 +54,7 @@ catalog_schema_prefix.push('.');
 - Pre-allocated capacity prevents reallocations
 - More explicit and efficient string building
 
-### 3. Cached Regex Pattern (wren_dialect.rs:30-38, 53-54)
+### 3. Cached Regex Pattern (analytics_dialect.rs:30-38, 53-54)
 **Before:**
 ```rust
 let identifier_regex = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
@@ -113,7 +113,7 @@ let identifier_regex = get_identifier_regex();
   - String replacement optimization (line 465-472)
   - Pre-allocated catalog_schema_prefix (line 178-185)
 
-- `analytics-core/core/src/mdl/dialect/wren_dialect.rs`
+- `analytics-core/core/src/mdl/dialect/analytics_dialect.rs`
   - Cached regex pattern (line 30-38, 53-54)
 
 - `analytics-core/core/src/performance.rs`

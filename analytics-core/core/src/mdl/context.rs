@@ -4,15 +4,15 @@ use std::ops::Deref;
 use std::sync::Arc;
 use futures::future::try_join_all;
 use crate::logical_plan::analyze::access_control::validate_clac_rule;
-use crate::logical_plan::analyze::expand_view::ExpandWrenViewRule;
+use crate::logical_plan::analyze::expand_view::ExpandAnalyticsViewRule;
 use crate::logical_plan::analyze::model_anlayze::ModelAnalyzeRule;
 use crate::logical_plan::analyze::model_generation::ModelGenerationRule;
 use crate::logical_plan::optimize::simplify_timestamp::TimestampSimplify;
-use crate::logical_plan::optimize::type_coercion::TypeCoercion as WrenTypeCoercion;
+use crate::logical_plan::optimize::type_coercion::TypeCoercion as AnalyticsTypeCoercion;
 use crate::logical_plan::utils::create_schema;
 use crate::mdl::manifest::Model;
-use crate::mdl::type_planner::WrenTypePlanner;
-use crate::mdl::{AnalyzedWrenMDL, SessionStateRef};
+use crate::mdl::type_planner::AnalyticsTypePlanner;
+use crate::mdl::{AnalyzedAnalyticsMDL, SessionStateRef};
 use async_trait::async_trait;
 use datafusion::arrow::datatypes::SchemaRef;
 use datafusion::catalog::memory::MemoryCatalogProvider;
@@ -41,15 +41,15 @@ use parking_lot::RwLock;
 
 pub type SessionPropertiesRef = Arc<HashMap<String, Option<String>>>;
 
-/// Apply Wren Rules to the context for sql generation.
-pub async fn apply_wren_on_ctx(
+/// Apply Analytics Rules to the context for sql generation.
+pub async fn apply_analytics_on_ctx(
     ctx: &SessionContext,
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     properties: SessionPropertiesRef,
     mode: Mode,
 ) -> Result<SessionContext> {
     let session_timezone = properties
-        .get("x-wren-timezone")
+        .get("x-analytics-timezone")
         .map(|v| v.as_ref().map(|s| s.as_str()).unwrap_or("UTC").to_string());
 
     let mut config = ctx
@@ -64,8 +64,8 @@ pub async fn apply_wren_on_ctx(
         )
         .with_create_default_catalog_and_schema(false)
         .with_default_catalog_and_schema(
-            analyzed_mdl.wren_mdl.catalog(),
-            analyzed_mdl.wren_mdl.schema(),
+            analyzed_mdl.analytics_mdl.catalog(),
+            analyzed_mdl.analytics_mdl.schema(),
         )
         .with_information_schema(true);
 
@@ -75,7 +75,7 @@ pub async fn apply_wren_on_ctx(
             .set("datafusion.execution.time_zone", &session_timezone)?;
     }
 
-    let type_planner = Arc::new(WrenTypePlanner::default());
+    let type_planner = Arc::new(AnalyticsTypePlanner::default());
     let reset_default_catalog_schema = Arc::new(RwLock::new(
         SessionStateBuilder::new_from_existing(ctx.state())
             .with_config(config.clone())
@@ -116,7 +116,7 @@ pub async fn apply_wren_on_ctx(
     Ok(ctx)
 }
 
-/// Execution mode for Wren engine.
+/// Execution mode for Analytics engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
     /// Local runtime mode, used for executing queries by DataFusion directly.
@@ -132,7 +132,7 @@ pub enum Mode {
 impl Mode {
     pub fn get_analyze_rules(
         &self,
-        analyzed_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state_ref: SessionStateRef,
         properties: SessionPropertiesRef,
     ) -> Vec<Arc<dyn AnalyzerRule + Send + Sync>> {
@@ -172,13 +172,13 @@ impl Mode {
 
 // Analyzer rules for local runtime
 fn analyze_rule_for_local_runtime(
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state_ref: SessionStateRef,
     properties: SessionPropertiesRef,
 ) -> Vec<Arc<dyn AnalyzerRule + Send + Sync>> {
     vec![
         // expand the view should be the first rule
-        Arc::new(ExpandWrenViewRule::new(
+        Arc::new(ExpandAnalyticsViewRule::new(
             Arc::clone(&analyzed_mdl),
             Arc::clone(&session_state_ref),
         )),
@@ -199,13 +199,13 @@ fn analyze_rule_for_local_runtime(
 
 // Analyze rules for local runtime
 fn analyze_rule_for_unparsing(
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state_ref: SessionStateRef,
     properties: SessionPropertiesRef,
 ) -> Vec<Arc<dyn AnalyzerRule + Send + Sync>> {
     vec![
         // expand the view should be the first rule
-        Arc::new(ExpandWrenViewRule::new(
+        Arc::new(ExpandAnalyticsViewRule::new(
             Arc::clone(&analyzed_mdl),
             Arc::clone(&session_state_ref),
         )),
@@ -222,8 +222,8 @@ fn analyze_rule_for_unparsing(
         // TimestampSimplify should be placed before TypeCoercion because the simplified timestamp should
         // be casted to the target type if needed
         Arc::new(TimestampSimplify::new()),
-        // Use WrenTypeCoercion for the unparsing purpose
-        Arc::new(WrenTypeCoercion::new()),
+        // Use AnalyticsTypeCoercion for the unparsing purpose
+        Arc::new(AnalyticsTypeCoercion::new()),
     ]
 }
 
@@ -275,13 +275,13 @@ fn optimize_rule_for_unparsing() -> Vec<Arc<dyn OptimizerRule + Send + Sync>> {
 }
 
 fn analyze_rule_for_permission(
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state_ref: SessionStateRef,
     properties: SessionPropertiesRef,
 ) -> Vec<Arc<dyn AnalyzerRule + Send + Sync>> {
     vec![
         // expand the view should be the first rule
-        Arc::new(ExpandWrenViewRule::new(
+        Arc::new(ExpandAnalyticsViewRule::new(
             Arc::clone(&analyzed_mdl),
             Arc::clone(&session_state_ref),
         )),
@@ -295,31 +295,31 @@ fn analyze_rule_for_permission(
 
 pub async fn register_table_with_mdl(
     ctx: &SessionContext,
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     properties: SessionPropertiesRef,
     mode: Mode,
 ) -> Result<()> {
     let catalog = MemoryCatalogProvider::new();
     let schema = MemorySchemaProvider::new();
-    let wren_mdl = analyzed_mdl.wren_mdl();
-    catalog.register_schema(&wren_mdl.manifest.schema, Arc::new(schema))?;
-    ctx.register_catalog(&wren_mdl.manifest.catalog, Arc::new(catalog));
+    let analytics_mdl = analyzed_mdl.analytics_mdl();
+    catalog.register_schema(&analytics_mdl.manifest.schema, Arc::new(schema))?;
+    ctx.register_catalog(&analytics_mdl.manifest.catalog, Arc::new(catalog));
 
     // Clone model and analyzed_mdl for each table registration (needed for ownership)
-    for model in wren_mdl.manifest.models.iter() {
-        let table = WrenDataSource::new(
+    for model in analytics_mdl.manifest.models.iter() {
+        let table = AnalyticsDataSource::new(
             model.clone(),
             &properties,
             analyzed_mdl.clone(),
             &mode,
         )?;
         ctx.register_table(
-            TableReference::full(wren_mdl.catalog(), wren_mdl.schema(), model.name()),
+            TableReference::full(analytics_mdl.catalog(), analytics_mdl.schema(), model.name()),
             Arc::new(table),
         )?;
     }
     // Build view logical plans in parallel
-    let view_futures = wren_mdl
+    let view_futures = analytics_mdl
         .manifest
         .views
         .iter()
@@ -335,7 +335,7 @@ pub async fn register_table_with_mdl(
     for (name, plan, statement) in built_views {
         let view_table = ViewTable::new(plan, Some(statement));
         ctx.register_table(
-            TableReference::full(wren_mdl.catalog(), wren_mdl.schema(), name),
+            TableReference::full(analytics_mdl.catalog(), analytics_mdl.schema(), name),
             Arc::new(view_table),
         )?;
     }
@@ -343,15 +343,15 @@ pub async fn register_table_with_mdl(
 }
 
 #[derive(Debug)]
-pub struct WrenDataSource {
+pub struct AnalyticsDataSource {
     schema: SchemaRef,
 }
 
-impl WrenDataSource {
+impl AnalyticsDataSource {
     pub fn new(
         model: Arc<Model>,
         properties: &SessionPropertiesRef,
-        analyzed_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
         mode: &Mode,
     ) -> Result<Self> {
         let available_columns = model
@@ -387,7 +387,7 @@ impl WrenDataSource {
 }
 
 #[async_trait]
-impl TableProvider for WrenDataSource {
+impl TableProvider for AnalyticsDataSource {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -408,6 +408,6 @@ impl TableProvider for WrenDataSource {
         _filters: &[Expr],
         _limit: Option<usize>,
     ) -> Result<Arc<dyn ExecutionPlan>> {
-        unreachable!("WrenDataSource should be replaced before physical planning")
+        unreachable!("AnalyticsDataSource should be replaced before physical planning")
     }
 }

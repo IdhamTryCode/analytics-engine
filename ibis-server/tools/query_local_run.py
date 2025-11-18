@@ -5,7 +5,7 @@
 # - sql: stdin input a SQL query
 #
 # Environment variables:
-# - WREN_MANIFEST_JSON_PATH: path to the manifest JSON file
+# - ANALYTICS_MANIFEST_JSON_PATH: path to the manifest JSON file
 # - REMOTE_FUNCTION_LIST_PATH: path to the function list file
 # - CONNECTION_INFO_PATH: path to the connection info file
 # - DATA_SOURCE: data source name
@@ -14,7 +14,7 @@
 import base64
 import json
 import os
-from app.custom_sqlglot.dialects.wren import Wren
+from app.custom_sqlglot.dialects.analytics import Analytics
 from app.model import MSSqlConnectionInfo, MySqlConnectionInfo, OracleConnectionInfo, PostgresConnectionInfo, SnowflakeConnectionInfo
 from app.util import to_json
 import sqlglot
@@ -35,13 +35,13 @@ sql = sys.stdin.read()
 
 
 load_dotenv(override=True)
-manifest_json_path = os.getenv("WREN_MANIFEST_JSON_PATH")
+manifest_json_path = os.getenv("ANALYTICS_MANIFEST_JSON_PATH")
 function_list_path = os.getenv("REMOTE_FUNCTION_LIST_PATH")
 connection_info_path = os.getenv("CONNECTION_INFO_PATH")
 data_source = os.getenv("DATA_SOURCE")
 
 # Welcome message
-print("### Welcome to the Wren Core Query Runner ###")
+print("### Welcome to the Analytics Core Query Runner ###")
 print("#")
 print("# Manifest JSON Path:", manifest_json_path)
 print("# Function List Path:", function_list_path)
@@ -84,9 +84,9 @@ print("# Planned SQL:\n", planned_sql)
 # Transpile the planned SQL
 if data_source == "mssql":
     # For mssql, we need to use the "tsql" dialect for reading
-    dialect_sql = sqlglot.transpile(planned_sql, read=Wren, write="tsql")[0]
+    dialect_sql = sqlglot.transpile(planned_sql, read=Analytics, write="tsql")[0]
 else:
-    dialect_sql = sqlglot.transpile(planned_sql, read=Wren, write=data_source)[0]
+    dialect_sql = sqlglot.transpile(planned_sql, read=Analytics, write=data_source)[0]
 print("# Dialect SQL:\n", dialect_sql)
 print("#")
 

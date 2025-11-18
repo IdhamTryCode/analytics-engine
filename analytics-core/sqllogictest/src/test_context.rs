@@ -28,9 +28,9 @@ use tempfile::TempDir;
 use analytics_core::mdl::builder::{
     ColumnBuilder, ManifestBuilder, ModelBuilder, RelationshipBuilder, ViewBuilder,
 };
-use analytics_core::mdl::context::{apply_wren_on_ctx, Mode, SessionPropertiesRef};
+use analytics_core::mdl::context::{apply_analytics_on_ctx, Mode, SessionPropertiesRef};
 use analytics_core::mdl::manifest::JoinType;
-use analytics_core::mdl::{create_wren_ctx, AnalyzedWrenMDL};
+use analytics_core::mdl::{create_analytics_ctx, AnalyzedAnalyticsMDL};
 
 const TEST_RESOURCES: &str = "tests/resources";
 
@@ -38,16 +38,16 @@ const TEST_RESOURCES: &str = "tests/resources";
 pub struct TestContext {
     /// Context for running queries
     ctx: SessionContext,
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     /// Temporary directory created and cleared at the end of the test
     test_dir: Option<TempDir>,
 }
 
 impl TestContext {
-    pub fn new(ctx: SessionContext, analyzed_wren_mdl: Arc<AnalyzedWrenMDL>) -> Self {
+    pub fn new(ctx: SessionContext, analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>) -> Self {
         Self {
             ctx,
-            analyzed_wren_mdl,
+            analyzed_analytics_mdl,
             test_dir: None,
         }
     }
@@ -63,7 +63,7 @@ impl TestContext {
             .with_target_partitions(4)
             .with_information_schema(true);
 
-        let ctx = create_wren_ctx(Some(config));
+        let ctx = create_analytics_ctx(Some(config));
 
         let file_name = relative_path.file_name().unwrap().to_str().unwrap();
         match file_name {
@@ -77,8 +77,8 @@ impl TestContext {
             }
             _ => {
                 info!("Using default SessionContext");
-                let mdl = Arc::new(AnalyzedWrenMDL::default());
-                let ctx = apply_wren_on_ctx(
+                let mdl = Arc::new(AnalyzedAnalyticsMDL::default());
+                let ctx = apply_analytics_on_ctx(
                     &ctx,
                     mdl.clone(),
                     SessionPropertiesRef::default(),
@@ -111,8 +111,8 @@ impl TestContext {
         &self.ctx
     }
 
-    pub fn analyzed_wren_mdl(&self) -> &Arc<AnalyzedWrenMDL> {
-        &self.analyzed_wren_mdl
+    pub fn analyzed_analytics_mdl(&self) -> &Arc<AnalyzedAnalyticsMDL> {
+        &self.analyzed_analytics_mdl
     }
 }
 
@@ -133,7 +133,7 @@ pub async fn register_ecommerce_table(ctx: &SessionContext) -> Result<TestContex
 
 async fn register_ecommerce_mdl(
     ctx: &SessionContext,
-) -> Result<(SessionContext, Arc<AnalyzedWrenMDL>)> {
+) -> Result<(SessionContext, Arc<AnalyzedAnalyticsMDL>)> {
     let manifest = ManifestBuilder::new()
         .model(
             ModelBuilder::new("Customers")
@@ -267,13 +267,13 @@ async fn register_ecommerce_mdl(
         )
         .view(
             ViewBuilder::new("Customer_view")
-                .statement(r#"select * from wrenai.public."Customers""#)
+                .statement(r#"select * from analyticsai.public."Customers""#)
                 .build(),
         )
-        .view(ViewBuilder::new("Revenue_orders").statement(r#"select "Order_id", sum("Price") from wrenai.public."Order_items" group by "Order_id""#).build())
+        .view(ViewBuilder::new("Revenue_orders").statement(r#"select "Order_id", sum("Price") from analyticsai.public."Order_items" group by "Order_id""#).build())
         .view(
             ViewBuilder::new("Revenue_orders_alias")
-                .statement(r#"select "Order_id" as "Order_id", sum("Price") as "Totalprice" from wrenai.public."Order_items" group by "Order_id""#)
+                .statement(r#"select "Order_id" as "Order_id", sum("Price") as "Totalprice" from analyticsai.public."Order_items" group by "Order_id""#)
                 .build())
         .build();
     let mut register_tables = HashMap::new();
@@ -307,11 +307,11 @@ async fn register_ecommerce_mdl(
             .await?
             .unwrap(),
     );
-    let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze_with_tables(
+    let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze_with_tables(
         manifest,
         register_tables,
     )?);
-    let ctx = apply_wren_on_ctx(
+    let ctx = apply_analytics_on_ctx(
         ctx,
         Arc::clone(&analyzed_mdl),
         Arc::new(HashMap::new()),
@@ -342,7 +342,7 @@ pub async fn register_tpch_table(ctx: &SessionContext) -> Result<TestContext> {
 
 async fn register_tpch_mdl(
     ctx: &SessionContext,
-) -> Result<(SessionContext, Arc<AnalyzedWrenMDL>)> {
+) -> Result<(SessionContext, Arc<AnalyzedAnalyticsMDL>)> {
     let manifest = ManifestBuilder::new()
         .model(
             ModelBuilder::new("customer")
@@ -543,11 +543,11 @@ async fn register_tpch_mdl(
             .unwrap(),
     );
 
-    let analyzed_mdl = Arc::new(AnalyzedWrenMDL::analyze_with_tables(
+    let analyzed_mdl = Arc::new(AnalyzedAnalyticsMDL::analyze_with_tables(
         manifest,
         register_tables,
     )?);
-    let ctx = apply_wren_on_ctx(
+    let ctx = apply_analytics_on_ctx(
         ctx,
         Arc::clone(&analyzed_mdl),
         Arc::new(HashMap::new()),

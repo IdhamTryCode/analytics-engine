@@ -7,7 +7,7 @@ from app.model.metadata.dto import (
     Column,
     Constraint,
     ConstraintType,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -15,33 +15,33 @@ from app.model.metadata.metadata import Metadata
 
 # Oracle-specific type mapping
 ORACLE_TYPE_MAPPING = {
-    "CHAR": RustWrenEngineColumnType.CHAR,
-    "NCHAR": RustWrenEngineColumnType.CHAR,
-    "VARCHAR2": RustWrenEngineColumnType.VARCHAR,
-    "NVARCHAR2": RustWrenEngineColumnType.VARCHAR,
-    "CLOB": RustWrenEngineColumnType.TEXT,
-    "NCLOB": RustWrenEngineColumnType.TEXT,
-    "NUMBER": RustWrenEngineColumnType.DECIMAL,
-    "FLOAT": RustWrenEngineColumnType.FLOAT8,
-    "BINARY_FLOAT": RustWrenEngineColumnType.FLOAT8,
-    "BINARY_DOUBLE": RustWrenEngineColumnType.DOUBLE,
-    "DATE": RustWrenEngineColumnType.TIMESTAMP,  # Oracle DATE includes time.
-    "TIMESTAMP": RustWrenEngineColumnType.TIMESTAMP,
-    "TIMESTAMP WITH TIME ZONE": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "TIMESTAMP WITH LOCAL TIME ZONE": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "INTERVAL YEAR TO MONTH": RustWrenEngineColumnType.INTERVAL,
-    "INTERVAL DAY TO SECOND": RustWrenEngineColumnType.INTERVAL,
-    "BLOB": RustWrenEngineColumnType.BYTEA,
-    "BFILE": RustWrenEngineColumnType.BYTEA,
-    "RAW": RustWrenEngineColumnType.BYTEA,
-    "LONG RAW": RustWrenEngineColumnType.BYTEA,
-    "ROWID": RustWrenEngineColumnType.CHAR,
-    "UROWID": RustWrenEngineColumnType.CHAR,
-    "JSON": RustWrenEngineColumnType.JSON,
-    "OSON": RustWrenEngineColumnType.JSON,
-    "VARCHAR2 WITH JSON": RustWrenEngineColumnType.JSON,
-    "BLOB WITH JSON": RustWrenEngineColumnType.JSON,
-    "CLOB WITH JSON": RustWrenEngineColumnType.JSON,
+    "CHAR": RustAnalyticsEngineColumnType.CHAR,
+    "NCHAR": RustAnalyticsEngineColumnType.CHAR,
+    "VARCHAR2": RustAnalyticsEngineColumnType.VARCHAR,
+    "NVARCHAR2": RustAnalyticsEngineColumnType.VARCHAR,
+    "CLOB": RustAnalyticsEngineColumnType.TEXT,
+    "NCLOB": RustAnalyticsEngineColumnType.TEXT,
+    "NUMBER": RustAnalyticsEngineColumnType.DECIMAL,
+    "FLOAT": RustAnalyticsEngineColumnType.FLOAT8,
+    "BINARY_FLOAT": RustAnalyticsEngineColumnType.FLOAT8,
+    "BINARY_DOUBLE": RustAnalyticsEngineColumnType.DOUBLE,
+    "DATE": RustAnalyticsEngineColumnType.TIMESTAMP,  # Oracle DATE includes time.
+    "TIMESTAMP": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "TIMESTAMP WITH TIME ZONE": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "TIMESTAMP WITH LOCAL TIME ZONE": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "INTERVAL YEAR TO MONTH": RustAnalyticsEngineColumnType.INTERVAL,
+    "INTERVAL DAY TO SECOND": RustAnalyticsEngineColumnType.INTERVAL,
+    "BLOB": RustAnalyticsEngineColumnType.BYTEA,
+    "BFILE": RustAnalyticsEngineColumnType.BYTEA,
+    "RAW": RustAnalyticsEngineColumnType.BYTEA,
+    "LONG RAW": RustAnalyticsEngineColumnType.BYTEA,
+    "ROWID": RustAnalyticsEngineColumnType.CHAR,
+    "UROWID": RustAnalyticsEngineColumnType.CHAR,
+    "JSON": RustAnalyticsEngineColumnType.JSON,
+    "OSON": RustAnalyticsEngineColumnType.JSON,
+    "VARCHAR2 WITH JSON": RustAnalyticsEngineColumnType.JSON,
+    "BLOB WITH JSON": RustAnalyticsEngineColumnType.JSON,
+    "CLOB WITH JSON": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -222,24 +222,24 @@ class OracleMetadata(Metadata):
     ):
         return f"{table_name}_{column_name}_{referenced_table_name}_{referenced_column_name}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform Oracle data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform Oracle data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The Oracle data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Convert to uppercase for Oracle type comparison
         normalized_type = data_type.upper()
 
         # Use the module-level mapping table
         mapped_type = ORACLE_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Oracle data type: {data_type}")
 
         return mapped_type

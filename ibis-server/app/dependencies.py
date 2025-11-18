@@ -5,10 +5,10 @@ from starlette.datastructures import Headers
 from app.model import QueryDTO
 from app.model.data_source import DataSource
 
-X_WREN_FALLBACK_DISABLE = "x-wren-fallback_disable"
-X_WREN_VARIABLE_PREFIX = "x-wren-variable-"
-X_WREN_TIMEZONE = "x-wren-timezone"
-X_WREN_DB_STATEMENT_TIMEOUT = "x-wren-db-statement_timeout"
+X_ANALYTICS_FALLBACK_DISABLE = "x-analytics-fallback_disable"
+X_ANALYTICS_VARIABLE_PREFIX = "x-analytics-variable-"
+X_ANALYTICS_TIMEZONE = "x-analytics-timezone"
+X_ANALYTICS_DB_STATEMENT_TIMEOUT = "x-analytics-db-statement_timeout"
 X_CACHE_HIT = "X-Cache-Hit"
 X_CACHE_CREATE_AT = "X-Cache-Create-At"
 X_CACHE_OVERRIDE = "X-Cache-Override"
@@ -23,7 +23,7 @@ def verify_query_dto(data_source: DataSource, dto: QueryDTO):
     data_source.get_connection_info(dto.connection_info, {})
 
 
-def get_wren_headers(request: Request) -> Headers:
+def get_analytics_headers(request: Request) -> Headers:
     return Headers(
         raw=list(
             filter(
@@ -35,7 +35,7 @@ def get_wren_headers(request: Request) -> Headers:
 
 
 def _filter_headers(header_string: str) -> bool:
-    if header_string.startswith("x-wren-"):
+    if header_string.startswith("x-analytics-"):
         return True
     elif header_string.startswith("x-user-"):
         return True

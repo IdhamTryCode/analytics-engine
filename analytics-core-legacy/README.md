@@ -1,28 +1,28 @@
-# Legacy Wren Core
-It's the legacy version of the Wren core implemented in Java. This module is utilized by the API v2 of the ibis-server for SQL planning and is responsible for building the `wren-engine` Docker image.
-Currently, Wren engine has been migrated to [a new Rust implementation](../analytics-core/) 🚀.
+# Legacy Analytics Core
+It's the legacy version of the Analytics core implemented in Java. This module is utilized by the API v2 of the ibis-server for SQL planning and is responsible for building the `analytics-engine` Docker image.
+Currently, Analytics engine has been migrated to [a new Rust implementation](../analytics-core/) 🚀.
 
 ## Requirements
 - JDK 21+
 
-## Running Wren Core Server
-We recommend running Wren core server using Docker. It's the easiest way to start the wren core server:
+## Running Analytics Core Server
+We recommend running Analytics core server using Docker. It's the easiest way to start the analytics core server:
 ```
 docker run --name java-engine -p 8080:8080 -v $(pwd)/docker/etc:/usr/src/app/etc ghcr.io/canner/analytics-engine:latest  
 ```
 
 ### Maven Build
-For developing, you can build Wren core by yourself. Wren core is a standard maven project. We can build an executable jar using the following command:
+For developing, you can build Analytics core by yourself. Analytics core is a standard maven project. We can build an executable jar using the following command:
 ```
 ./mvnw clean install -DskipTests -Dair.check.skip-dependency=true -P exec-jar
 ```
-Then, start Wren core server
+Then, start Analytics core server
 ```
-java -Dconfig=docker/etc/config.properties --add-opens=java.base/java.nio=ALL-UNNAMED -jar wren-server/target/wren-server-0.15.2-SNAPSHOT-executable.jar
+java -Dconfig=docker/etc/config.properties --add-opens=java.base/java.nio=ALL-UNNAMED -jar analytics-server/target/analytics-server-0.15.2-SNAPSHOT-executable.jar
 ```
 
-### Running Wren Engine in IDE
-After building with Maven, you can run the project in your IDE. We recommend using [IntelliJ IDEA](http://www.jetbrains.com/idea/). Since Wren core is a standard Maven project, you can easily import it into your IDE. In IntelliJ, choose `Open Project from the Quick Start` box or select `Open` from the File menu and choose the root `pom.xml` file.
+### Running Analytics Engine in IDE
+After building with Maven, you can run the project in your IDE. We recommend using [IntelliJ IDEA](http://www.jetbrains.com/idea/). Since Analytics core is a standard Maven project, you can easily import it into your IDE. In IntelliJ, choose `Open Project from the Quick Start` box or select `Open` from the File menu and choose the root `pom.xml` file.
 
 After opening the project in IntelliJ, ensure that the Java SDK is properly configured for the project:
 
@@ -32,6 +32,6 @@ After opening the project in IntelliJ, ensure that the Java SDK is properly conf
 
 Set up the running profile with the following configuration:
 - **SDK**: The JDK you configured.
-- **Main class**: `io.wren.server.WrenServer`
+- **Main class**: `io.analytics.server.AnalyticsServer`
 - **VM options**: `-Dconfig=docker/etc/config.properties`
 - **Working directory**: The path to `analytics-core-legacy`.

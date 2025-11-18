@@ -39,7 +39,7 @@ class View(BaseModel):
 
 
 class Manifest(BaseModel):
-    catalog: str = "wren"
+    catalog: str = "analytics"
     mdl_schema: str = Field(alias="schema", default="public")
     models: list[Model]
     relationships: list[Relationship]

@@ -1,5 +1,5 @@
 statement ok
-SELECT * FROM wrenai.public."Customer_view"
+SELECT * FROM analyticsai.public."Customer_view"
 
 statement ok
 SELECT * FROM public."Customer_view"
@@ -8,16 +8,16 @@ statement ok
 SELECT * FROM "Customer_view"
 
 statement ok
-SELECT * FROM wrenai.public."Revenue_orders"
+SELECT * FROM analyticsai.public."Revenue_orders"
 
 statement ok
-SELECT * FROM wrenai.public."Revenue_orders_alias"
+SELECT * FROM analyticsai.public."Revenue_orders_alias"
 
 statement ok
-SELECT "Totalprice" FROM wrenai.public."Revenue_orders_alias"
+SELECT "Totalprice" FROM analyticsai.public."Revenue_orders_alias"
 
 # TODO: There are some issues of `push_down_filter` rule for the view with filter.
 # query TR
-# SELECT "Order_id", "Totalprice" FROM wrenai.public."Revenue_orders_alias" where "Order_id" = '76754c0e642c8f99a8c3fcb8a14ac700'
+# SELECT "Order_id", "Totalprice" FROM analyticsai.public."Revenue_orders_alias" where "Order_id" = '76754c0e642c8f99a8c3fcb8a14ac700'
 # ----
 # 76754c0e642c8f99a8c3fcb8a14ac700 287.4

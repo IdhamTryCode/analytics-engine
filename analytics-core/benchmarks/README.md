@@ -1,6 +1,6 @@
-# Wren Core Benchmarks
+# Analytics Core Benchmarks
 
-This crate contains benchmarks for the Wren core library, based on industry-standard open source benchmarks, designed to help measure and improve the performance of Wren core.
+This crate contains benchmarks for the Analytics core library, based on industry-standard open source benchmarks, designed to help measure and improve the performance of Analytics core.
 
 # Supported Benchmarks
 
@@ -14,9 +14,9 @@ This benchmark is derived from the [TPC-H][1] version [2.17.1]. The data and ref
 [2]: https://github.com/databricks/tpch-dbgen.git
 [2.17.1]: https://www.tpc.org/tpc_documents_current_versions/pdf/tpc-h_v2.17.1.pdf
 
-## Wren
+## Analytics
 
-This benchmark is used to collect complex SQL test cases for Wren AI performance evaluation.
+This benchmark is used to collect complex SQL test cases for Analytics AI performance evaluation.
 
 - **`q1`**: A complex SQL query featuring multiple CTEs (Common Table Expressions) and subqueries, designed to test complex query planning and optimization.
 - **`q2`**: Similar to `q1` but includes an additional `UNION` clause to test query rewriting and optimization with set operations.
@@ -106,13 +106,13 @@ cargo run --release --bin tpch -- benchmark --query 1 -i 10 -o result.json
 # Run all TPC-H queries
 cargo run --release --bin tpch -- benchmark --all-queries -i 5
 
-# Run Wren-specific benchmarks
-cargo run --release --bin wren -- benchmark --query 1 -i 10
+# Run Analytics-specific benchmarks
+cargo run --release --bin analytics -- benchmark --query 1 -i 10
 ```
 
 ### Command Line Options
 
-- `--query <number>`: Run a specific query (TPC-H: 1-22, Wren: 1-2)
+- `--query <number>`: Run a specific query (TPC-H: 1-22, Analytics: 1-2)
 - `-i, --iterations <number>`: Number of iterations to run (default: 1)
 - `-o, --output <file>`: Output results to JSON file
 - `--all-queries`: Run all available queries in the benchmark suite
@@ -127,7 +127,7 @@ benchmarks/
 ├── results/              # Benchmark results and comparisons
 ├── src/
 │   ├── tpch/            # TPC-H benchmark implementation
-│   └── wren/            # Wren-specific benchmark queries
+│   └── analytics/            # Analytics-specific benchmark queries
 └── Cargo.toml           # Dependencies and build configuration
 ```
 

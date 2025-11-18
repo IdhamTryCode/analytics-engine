@@ -1,4 +1,4 @@
-# Wren Core Python binding
+# Analytics Core Python binding
 
 This is a python binding for [analytics-core](../analytics-core). It uses [PyO3](https://github.com/PyO3/pyo3) to build the required wheel for [ibis-server](../ibis-server/).
 

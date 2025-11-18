@@ -26,7 +26,7 @@ use analytics_core_base::mdl::{Column, Model, SessionProperty};
 use crate::{
     logical_plan::utils::from_qualified_name,
     mdl::{context::SessionPropertiesRef, Dataset, SessionStateRef},
-    AnalyzedWrenMDL,
+    AnalyzedAnalyticsMDL,
 };
 
 /// Collect the required field from the condition of row level access control rules.
@@ -291,7 +291,7 @@ pub(crate) fn validate_clac_rule(
     model_name: &str,
     column: &Column,
     properties: &SessionPropertiesRef,
-    analyzed_mdl: Option<Arc<AnalyzedWrenMDL>>,
+    analyzed_mdl: Option<Arc<AnalyzedAnalyticsMDL>>,
 ) -> Result<(bool, Option<String>)> {
     let (is_valid, rule_name) = if let Some(clac) = column.column_level_access_control() {
         if !validate_rule(&clac.name, &clac.required_properties, properties)? {
@@ -325,7 +325,7 @@ pub(crate) fn validate_clac_rule(
     if is_valid && column.is_calculated {
         if let Some(analyzed_mdl) = analyzed_mdl {
             let qualified_col =
-                from_qualified_name(&analyzed_mdl.wren_mdl, model_name, column.name());
+                from_qualified_name(&analyzed_mdl.analytics_mdl, model_name, column.name());
             let Some(required_fields) =
                 analyzed_mdl.lineage.required_fields_map.get(&qualified_col)
             else {
@@ -335,7 +335,7 @@ pub(crate) fn validate_clac_rule(
                 let Some(model_name) = &field.relation else {
                     return plan_err!("Model name not found for {}", field);
                 };
-                let Some(ref_model) = analyzed_mdl.wren_mdl.get_model(model_name.table())
+                let Some(ref_model) = analyzed_mdl.analytics_mdl.get_model(model_name.table())
                 else {
                     return plan_err!("Model {} not found", model_name.table());
                 };

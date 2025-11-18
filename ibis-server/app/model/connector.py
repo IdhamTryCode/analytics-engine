@@ -52,7 +52,7 @@ from app.model.error import (
     DIALECT_SQL,
     ErrorCode,
     ErrorPhase,
-    WrenError,
+    AnalyticsError,
 )
 from app.model.utils import init_duckdb_gcs, init_duckdb_minio, init_duckdb_s3
 
@@ -95,14 +95,14 @@ class Connector:
         try:
             return self._connector.query(sql, limit)
         except (
-            WrenError,
+            AnalyticsError,
             TimeoutError,
             psycopg.errors.QueryCanceled,
         ):
             raise
         except trino.exceptions.TrinoQueryError as e:
             if not e.error_name == "EXCEEDED_TIME_LIMIT":
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.INVALID_SQL,
                     str(e),
                     phase=ErrorPhase.SQL_DRY_RUN,
@@ -111,7 +111,7 @@ class Connector:
             raise
         except ClickHouseDbError as e:
             if "TIMEOUT_EXCEEDED" not in str(e):
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.INVALID_SQL,
                     str(e),
                     phase=ErrorPhase.SQL_EXECUTION,
@@ -119,7 +119,7 @@ class Connector:
                 ) from e
             raise e
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 str(e),
                 phase=ErrorPhase.SQL_EXECUTION,
@@ -130,14 +130,14 @@ class Connector:
         try:
             self._connector.dry_run(sql)
         except (
-            WrenError,
+            AnalyticsError,
             TimeoutError,
             psycopg.errors.QueryCanceled,
         ):
             raise
         except trino.exceptions.TrinoQueryError as e:
             if not e.error_name == "EXCEEDED_TIME_LIMIT":
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.INVALID_SQL,
                     str(e),
                     phase=ErrorPhase.SQL_DRY_RUN,
@@ -146,7 +146,7 @@ class Connector:
             raise
         except ClickHouseDbError as e:
             if "TIMEOUT_EXCEEDED" not in str(e):
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.INVALID_SQL,
                     str(e),
                     phase=ErrorPhase.SQL_DRY_RUN,
@@ -154,7 +154,7 @@ class Connector:
                 ) from e
             raise
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 str(e),
                 phase=ErrorPhase.SQL_DRY_RUN,
@@ -336,13 +336,13 @@ class MSSqlConnector(SimpleConnector):
             # Workaround for ibis issue #10331
             if e.args[0] == "'NoneType' object has no attribute 'lower'":
                 error_message = self._describe_sql_for_error_message(sql)
-                raise WrenError(
+                raise AnalyticsError(
                     error_code=ErrorCode.INVALID_SQL,
                     message=f"The sql dry run failed. {error_message}.",
                     phase=ErrorPhase.SQL_DRY_RUN,
                     metadata={DIALECT_SQL: sql},
                 ) from e
-            raise WrenError(
+            raise AnalyticsError(
                 error_code=ErrorCode.IBIS_PROJECT_ERROR,
                 message=str(e),
                 phase=ErrorPhase.SQL_DRY_RUN,
@@ -441,7 +441,7 @@ class BigQueryConnector(SimpleConnector):
             #
             # It's a workaround for the issue that the ibis library does not support empty result for some special types (e.g. JSON or Interval)
             # see details:
-            # - https://github.com/Canner/wren-engine/issues/909
+            # - https://github.com/Canner/analytics-engine/issues/909
             # - https://github.com/ibis-project/ibis/issues/10612
             if "Must pass schema" in str(e):
                 with tracer.start_as_current_span(
@@ -504,7 +504,7 @@ class DuckDBConnector:
     def _attach_database(self, connection_info: ConnectionInfo) -> None:
         db_files = self._list_duckdb_files(connection_info)
         if not db_files:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.DUCKDB_FILE_NOT_FOUND,
                 "No DuckDB files found in the specified path.",
             )
@@ -515,11 +515,11 @@ class DuckDBConnector:
                     f"ATTACH DATABASE '{file}' AS \"{os.path.splitext(os.path.basename(file))[0]}\" (READ_ONLY);"
                 )
             except IOException as e:
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.ATTACH_DUCKDB_ERROR, f"Failed to attach database: {e!s}"
                 )
             except HTTPException as e:
-                raise WrenError(
+                raise AnalyticsError(
                     ErrorCode.ATTACH_DUCKDB_ERROR, f"Failed to attach database: {e!s}"
                 )
 
@@ -537,7 +537,7 @@ class DuckDBConnector:
                         )
                         files.append(full_path)
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR, f"Failed to list files: {e!s}"
             )
 
@@ -574,7 +574,7 @@ class RedshiftConnector:
                 password=connection_info.password.get_secret_value(),
             )
         else:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_INTERNAL_ERROR,
                 "Invalid Redshift connection_info type",
             )

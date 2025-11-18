@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust untuk mengidentifikasi masalah security dan performance, serta memberikan rekomendasi improvement.
+Analisa menyeluruh terhadap codebase Analytics Engine dengan fokus pada bagian Rust untuk mengidentifikasi masalah security dan performance, serta memberikan rekomendasi improvement.
 
 ## 1. Security Issues
 
@@ -133,7 +133,7 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 
 **Lokasi:**
 - `analytics-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - Line 454-456: Multiple string operations
-- `analytics-core/core/src/mdl/dialect/wren_dialect.rs` - Regex compilation setiap kali
+- `analytics-core/core/src/mdl/dialect/analytics_dialect.rs` - Regex compilation setiap kali
 
 **Impact:**
 - Memory: Frequent allocations/deallocations

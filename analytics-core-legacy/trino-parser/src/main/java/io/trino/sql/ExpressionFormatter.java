@@ -430,7 +430,7 @@ public final class ExpressionFormatter
                 return processSliceInBigQuery(node);
             }
 
-            // TODO: `GENERATE_TIMESTAMP_ARRAY` is a bigquery function. We may need to consider the SQL dialect when Wren planning.
+            // TODO: `GENERATE_TIMESTAMP_ARRAY` is a bigquery function. We may need to consider the SQL dialect when Analytics planning.
             if ("GENERATE_TIMESTAMP_ARRAY".equalsIgnoreCase(node.getName().toString()) && dialect.equals(DUCKDB)) {
                 return processGenerateTimestampArrayInDuckDB(node);
             }
@@ -1197,7 +1197,7 @@ public final class ExpressionFormatter
                     builder.append(" NULLS FIRST");
                     break;
                 case LAST:
-                    // wren engine prefer to use "NULLS LAST" by default null ordering
+                    // analytics engine prefer to use "NULLS LAST" by default null ordering
                 case UNDEFINED:
                     builder.append(" NULLS LAST");
                     break;

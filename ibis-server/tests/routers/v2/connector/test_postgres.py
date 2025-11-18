@@ -9,7 +9,7 @@ import sqlalchemy
 from sqlalchemy import text
 from testcontainers.postgres import PostgresContainer
 
-from app.model.data_source import X_WREN_DB_STATEMENT_TIMEOUT
+from app.model.data_source import X_ANALYTICS_DB_STATEMENT_TIMEOUT
 from app.model.error import ErrorCode, ErrorPhase
 from app.model.validator import rules
 from tests.conftest import file_path
@@ -1044,7 +1044,7 @@ async def test_connection_timeout(client, manifest_str, postgres: PostgresContai
             "manifestStr": manifest_str,
             "sql": "SELECT 1 FROM (SELECT pg_sleep(5))",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert response.status_code == 504  # Gateway Timeout
     result = response.json()

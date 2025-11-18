@@ -13,11 +13,11 @@ Dokumen ini menjelaskan implementasi improvements untuk security dan performance
 - Input validation utilities:
   - `validate_sql()`: Validasi SQL query (max length, basic injection detection)
   - `validate_mdl_size()`: Validasi MDL JSON size
-- Error types: `WrenCoreError` dengan berbagai kategori error
+- Error types: `AnalyticsCoreError` dengan berbagai kategori error
 
 **Usage:**
 ```rust
-use analytics_core::error::{WrenCoreResult, validation};
+use analytics_core::error::{AnalyticsCoreResult, validation};
 
 // Validate SQL before processing
 validation::validate_sql(sql)?;
@@ -92,7 +92,7 @@ cargo run --release --bin compare -- \
 
 #### Step 1: Update imports
 ```rust
-use analytics_core::error::{WrenCoreResult, validation};
+use analytics_core::error::{AnalyticsCoreResult, validation};
 ```
 
 #### Step 2: Add input validation
@@ -100,7 +100,7 @@ use analytics_core::error::{WrenCoreResult, validation};
 // Before
 pub async fn transform_sql_with_ctx(
     ctx: &SessionContext,
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     sql: &str,
 ) -> Result<String> {
     // Process SQL directly
@@ -109,9 +109,9 @@ pub async fn transform_sql_with_ctx(
 // After
 pub async fn transform_sql_with_ctx(
     ctx: &SessionContext,
-    analyzed_mdl: Arc<AnalyzedWrenMDL>,
+    analyzed_mdl: Arc<AnalyzedAnalyticsMDL>,
     sql: &str,
-) -> WrenCoreResult<String> {
+) -> AnalyticsCoreResult<String> {
     // Validate input first
     validation::validate_sql(sql)?;
     
@@ -122,11 +122,11 @@ pub async fn transform_sql_with_ctx(
 #### Step 3: Replace unwrap() calls
 ```rust
 // Before
-let data_source = analyzed_mdl.wren_mdl().data_source().unwrap_or_default();
+let data_source = analyzed_mdl.analytics_mdl().data_source().unwrap_or_default();
 
 // After
-let data_source = analyzed_mdl.wren_mdl().data_source()
-    .ok_or_else(|| WrenCoreError::Internal("Data source not found".to_string()))?;
+let data_source = analyzed_mdl.analytics_mdl().data_source()
+    .ok_or_else(|| AnalyticsCoreError::Internal("Data source not found".to_string()))?;
 ```
 
 ### 3. Applying Performance Improvements
@@ -134,7 +134,7 @@ let data_source = analyzed_mdl.wren_mdl().data_source()
 #### Step 1: Reduce Arc clones
 ```rust
 // Before
-let ctx = apply_wren_on_ctx(
+let ctx = apply_analytics_on_ctx(
     ctx,
     Arc::clone(&analyzed_mdl),
     Arc::clone(&properties),
@@ -142,7 +142,7 @@ let ctx = apply_wren_on_ctx(
 ).await?;
 
 // After - use references when possible
-let ctx = apply_wren_on_ctx(
+let ctx = apply_analytics_on_ctx(
     ctx,
     &analyzed_mdl,  // Pass reference instead
     &properties,     // Pass reference instead

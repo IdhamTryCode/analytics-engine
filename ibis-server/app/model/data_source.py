@@ -52,9 +52,9 @@ from app.model import (
     SSLMode,
     TrinoConnectionInfo,
 )
-from app.model.error import ErrorCode, WrenError
+from app.model.error import ErrorCode, AnalyticsError
 
-X_WREN_DB_STATEMENT_TIMEOUT = "x-wren-db-statement_timeout"
+X_ANALYTICS_DB_STATEMENT_TIMEOUT = "x-analytics-db-statement_timeout"
 
 
 class DataSource(StrEnum):
@@ -109,17 +109,17 @@ class DataSource(StrEnum):
                 if "statement_timeout" not in options:
                     if options:
                         options += " "
-                    options += f"-c statement_timeout={headers.get(X_WREN_DB_STATEMENT_TIMEOUT, 180)}s"
+                    options += f"-c statement_timeout={headers.get(X_ANALYTICS_DB_STATEMENT_TIMEOUT, 180)}s"
                     kwargs["options"] = options
                 info.kwargs = kwargs
             case DataSource.clickhouse:
-                session_timeout = headers.get(X_WREN_DB_STATEMENT_TIMEOUT, 180)
+                session_timeout = headers.get(X_ANALYTICS_DB_STATEMENT_TIMEOUT, 180)
                 if info.settings is None:
                     info.settings = {}
                 if "max_execution_time" not in info.settings:
                     info.settings["max_execution_time"] = int(session_timeout)
             case DataSource.trino:
-                session_timeout = headers.get(X_WREN_DB_STATEMENT_TIMEOUT, 180)
+                session_timeout = headers.get(X_ANALYTICS_DB_STATEMENT_TIMEOUT, 180)
                 if info.kwargs is None:
                     info.kwargs = {}
                 session_properties = info.kwargs.get("session_properties", {})
@@ -129,7 +129,7 @@ class DataSource(StrEnum):
                     )
                 info.kwargs["session_properties"] = session_properties
             case DataSource.bigquery:
-                session_timeout = headers.get(X_WREN_DB_STATEMENT_TIMEOUT, 180)
+                session_timeout = headers.get(X_ANALYTICS_DB_STATEMENT_TIMEOUT, 180)
                 if not hasattr(info, "job_timeout_ms") or info.job_timeout_ms is None:
                     info.job_timeout_ms = int(session_timeout) * 1000
         return info
@@ -188,7 +188,7 @@ class DataSource(StrEnum):
         self, parsed: urllib.parse.ParseResult
     ) -> ClickHouseConnectionInfo:
         if not parsed.scheme or parsed.scheme != "clickhouse":
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.INVALID_CONNECTION_INFO,
                 "Invalid connection URL for ClickHouse",
             )
@@ -247,10 +247,10 @@ class DataSourceExtension(Enum):
             return getattr(self, f"get_{self.name}_connection")(info)
         except KeyError:
             raise NotImplementedError(f"Unsupported data source: {self}")
-        except WrenError:
+        except AnalyticsError:
             raise
         except Exception as e:
-            raise WrenError(ErrorCode.GET_CONNECTION_ERROR, f"{e!s}") from e
+            raise AnalyticsError(ErrorCode.GET_CONNECTION_ERROR, f"{e!s}") from e
 
     @staticmethod
     def get_athena_connection(info: AthenaConnectionInfo) -> BaseBackend:
@@ -431,7 +431,7 @@ class DataSourceExtension(Enum):
         )
 
         if ssl_mode == SSLMode.VERIFY_CA and not info.ssl_ca:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.INVALID_CONNECTION_INFO,
                 "SSL CA must be provided when SSL mode is VERIFY CA",
             )

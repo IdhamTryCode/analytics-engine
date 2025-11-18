@@ -1,7 +1,7 @@
 //! Benchmark comparison tool
 use std::path::PathBuf;
 use structopt::StructOpt;
-use wren_benchmarks::util::comparison::BenchmarkComparison;
+use analytics_benchmarks::util::comparison::BenchmarkComparison;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "compare", about = "Compare benchmark results")]
@@ -72,11 +72,11 @@ fn format_comparison_table(comparison: &BenchmarkComparison) -> String {
 
     for qc in &comparison.queries {
         let status = match qc.status {
-            wren_benchmarks::util::comparison::ChangeStatus::Improved => "✅ Improved",
-            wren_benchmarks::util::comparison::ChangeStatus::Regressed => "❌ Regressed",
-            wren_benchmarks::util::comparison::ChangeStatus::Faster => "⬇️ Faster",
-            wren_benchmarks::util::comparison::ChangeStatus::Slower => "⬆️ Slower",
-            wren_benchmarks::util::comparison::ChangeStatus::NoChange => "➡️ No Change",
+            analytics_benchmarks::util::comparison::ChangeStatus::Improved => "✅ Improved",
+            analytics_benchmarks::util::comparison::ChangeStatus::Regressed => "❌ Regressed",
+            analytics_benchmarks::util::comparison::ChangeStatus::Faster => "⬇️ Faster",
+            analytics_benchmarks::util::comparison::ChangeStatus::Slower => "⬆️ Slower",
+            analytics_benchmarks::util::comparison::ChangeStatus::NoChange => "➡️ No Change",
         };
 
         table.add_row(vec![

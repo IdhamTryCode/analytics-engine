@@ -2,9 +2,9 @@
 use datafusion::common::DataFusionError;
 use std::fmt;
 
-/// Custom error type for Wren Core operations
+/// Custom error type for Analytics Core operations
 #[derive(Debug)]
-pub enum WrenCoreError {
+pub enum AnalyticsCoreError {
     /// DataFusion related errors
     DataFusion(DataFusionError),
     /// SQL parsing errors
@@ -21,42 +21,42 @@ pub enum WrenCoreError {
     Internal(String),
 }
 
-impl fmt::Display for WrenCoreError {
+impl fmt::Display for AnalyticsCoreError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            WrenCoreError::DataFusion(e) => write!(f, "DataFusion error: {}", e),
-            WrenCoreError::SqlParse(msg) => write!(f, "SQL parse error: {}", msg),
-            WrenCoreError::MdlValidation(msg) => write!(f, "MDL validation error: {}", msg),
-            WrenCoreError::InputValidation(msg) => write!(f, "Input validation error: {}", msg),
-            WrenCoreError::PermissionDenied(msg) => write!(f, "Permission denied: {}", msg),
-            WrenCoreError::ResourceExhausted(msg) => write!(f, "Resource exhausted: {}", msg),
-            WrenCoreError::Internal(msg) => write!(f, "Internal error: {}", msg),
+            AnalyticsCoreError::DataFusion(e) => write!(f, "DataFusion error: {}", e),
+            AnalyticsCoreError::SqlParse(msg) => write!(f, "SQL parse error: {}", msg),
+            AnalyticsCoreError::MdlValidation(msg) => write!(f, "MDL validation error: {}", msg),
+            AnalyticsCoreError::InputValidation(msg) => write!(f, "Input validation error: {}", msg),
+            AnalyticsCoreError::PermissionDenied(msg) => write!(f, "Permission denied: {}", msg),
+            AnalyticsCoreError::ResourceExhausted(msg) => write!(f, "Resource exhausted: {}", msg),
+            AnalyticsCoreError::Internal(msg) => write!(f, "Internal error: {}", msg),
         }
     }
 }
 
-impl std::error::Error for WrenCoreError {
+impl std::error::Error for AnalyticsCoreError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            WrenCoreError::DataFusion(e) => Some(e),
+            AnalyticsCoreError::DataFusion(e) => Some(e),
             _ => None,
         }
     }
 }
 
-impl From<DataFusionError> for WrenCoreError {
+impl From<DataFusionError> for AnalyticsCoreError {
     fn from(err: DataFusionError) -> Self {
-        WrenCoreError::DataFusion(err)
+        AnalyticsCoreError::DataFusion(err)
     }
 }
 
-/// Result type alias for Wren Core operations
-pub type WrenCoreResult<T> = Result<T, WrenCoreError>;
+/// Result type alias for Analytics Core operations
+pub type AnalyticsCoreResult<T> = Result<T, AnalyticsCoreError>;
 
 /// Input validation utilities
 pub mod validation {
-    use super::WrenCoreError;
-    use super::WrenCoreResult;
+    use super::AnalyticsCoreError;
+    use super::AnalyticsCoreResult;
 
     /// Maximum SQL query length (1MB)
     pub const MAX_SQL_LENGTH: usize = 1_048_576;
@@ -65,13 +65,13 @@ pub mod validation {
     pub const MAX_SQL_DEPTH: usize = 100;
 
     /// Validate SQL input
-    pub fn validate_sql(sql: &str) -> WrenCoreResult<()> {
+    pub fn validate_sql(sql: &str) -> AnalyticsCoreResult<()> {
         if sql.is_empty() {
-            return Err(WrenCoreError::InputValidation("SQL query cannot be empty".to_string()));
+            return Err(AnalyticsCoreError::InputValidation("SQL query cannot be empty".to_string()));
         }
 
         if sql.len() > MAX_SQL_LENGTH {
-            return Err(WrenCoreError::InputValidation(format!(
+            return Err(AnalyticsCoreError::InputValidation(format!(
                 "SQL query exceeds maximum length of {} bytes",
                 MAX_SQL_LENGTH
             )));
@@ -96,11 +96,11 @@ pub mod validation {
     }
 
     /// Validate MDL JSON size
-    pub fn validate_mdl_size(mdl_json: &str) -> WrenCoreResult<()> {
+    pub fn validate_mdl_size(mdl_json: &str) -> AnalyticsCoreResult<()> {
         const MAX_MDL_SIZE: usize = 10_485_760; // 10MB
 
         if mdl_json.len() > MAX_MDL_SIZE {
-            return Err(WrenCoreError::InputValidation(format!(
+            return Err(AnalyticsCoreError::InputValidation(format!(
                 "MDL JSON exceeds maximum size of {} bytes",
                 MAX_MDL_SIZE
             )));

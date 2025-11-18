@@ -10,12 +10,12 @@ RUN \
     apt update && \
     apt -y install postgresql-client-13
 
-ARG WREN_VERSION
-ENV ENV_WREN_VERSION=${WREN_VERSION}
-ENV WREN_JAR=wren-server-${ENV_WREN_VERSION}-executable.jar
-COPY ${WREN_JAR} ./
+ARG ANALYTICS_VERSION
+ENV ENV_ANALYTICS_VERSION=${ANALYTICS_VERSION}
+ENV ANALYTICS_JAR=analytics-server-${ENV_ANALYTICS_VERSION}-executable.jar
+COPY ${ANALYTICS_JAR} ./
 
 COPY entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
 
-CMD ./entrypoint.sh ${WREN_JAR} ${MAX_HEAP_SIZE} ${MIN_HEAP_SIZE}
+CMD ./entrypoint.sh ${ANALYTICS_JAR} ${MAX_HEAP_SIZE} ${MIN_HEAP_SIZE}

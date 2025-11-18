@@ -1,6 +1,6 @@
 use crate::logical_plan::utils::belong_to_mdl;
 use crate::mdl::utils::quoted;
-use crate::mdl::{AnalyzedWrenMDL, SessionStateRef};
+use crate::mdl::{AnalyzedAnalyticsMDL, SessionStateRef};
 use datafusion::common::tree_node::Transformed;
 use datafusion::common::Result;
 use datafusion::config::ConfigOptions;
@@ -9,41 +9,41 @@ use datafusion::optimizer::AnalyzerRule;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-pub struct ExpandWrenViewRule {
-    analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+pub struct ExpandAnalyticsViewRule {
+    analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
     session_state: SessionStateRef,
 }
 
-impl ExpandWrenViewRule {
+impl ExpandAnalyticsViewRule {
     pub fn new(
-        analyzed_wren_mdl: Arc<AnalyzedWrenMDL>,
+        analyzed_analytics_mdl: Arc<AnalyzedAnalyticsMDL>,
         session_state: SessionStateRef,
     ) -> Self {
         Self {
-            analyzed_wren_mdl,
+            analyzed_analytics_mdl,
             session_state,
         }
     }
 }
 
-impl Debug for ExpandWrenViewRule {
+impl Debug for ExpandAnalyticsViewRule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ExpandWrenViewRule").finish()
+        f.debug_struct("ExpandAnalyticsViewRule").finish()
     }
 }
 
-impl AnalyzerRule for ExpandWrenViewRule {
+impl AnalyzerRule for ExpandAnalyticsViewRule {
     fn analyze(&self, plan: LogicalPlan, _: &ConfigOptions) -> Result<LogicalPlan> {
         let plan = plan
             .transform_up_with_subqueries(|plan| match &plan {
                 LogicalPlan::TableScan(table_scan) => {
                     if belong_to_mdl(
-                        &self.analyzed_wren_mdl.wren_mdl(),
+                        &self.analyzed_analytics_mdl.analytics_mdl(),
                         table_scan.table_name.clone(),
                         Arc::clone(&self.session_state),
                     ) && self
-                        .analyzed_wren_mdl
-                        .wren_mdl()
+                        .analyzed_analytics_mdl
+                        .analytics_mdl()
                         .get_view(table_scan.table_name.table())
                         .is_some()
                     {
@@ -65,6 +65,6 @@ impl AnalyzerRule for ExpandWrenViewRule {
     }
 
     fn name(&self) -> &str {
-        "ExpandWrenViewRule"
+        "ExpandAnalyticsViewRule"
     }
 }

@@ -84,9 +84,9 @@ if (Test-Path ".\mvnw.cmd") {
         exit 1
     }
     
-    Write-Host "All modules built successfully. Building executable JAR for wren-server..." -ForegroundColor Green
-    # Now build wren-server with exec-jar profile to create executable JAR
-    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "package" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-Dair.check.skip-dependency=true" "-pl" "wren-server" "-P" "exec-jar"
+    Write-Host "All modules built successfully. Building executable JAR for analytics-server..." -ForegroundColor Green
+    # Now build analytics-server with exec-jar profile to create executable JAR
+    & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "package" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-Dair.check.skip-dependency=true" "-pl" "analytics-server" "-P" "exec-jar"
 } else {
     Write-Host "Error: Maven wrapper not found!" -ForegroundColor Red
     Write-Host "Please ensure you're in the analytics-core-legacy directory" -ForegroundColor Yellow
@@ -96,7 +96,7 @@ if (Test-Path ".\mvnw.cmd") {
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "JAR file built successfully!" -ForegroundColor Green
-    Write-Host "Location: wren-server\target\wren-server-${version}-executable.jar" -ForegroundColor Cyan
+    Write-Host "Location: analytics-server\target\analytics-server-${version}-executable.jar" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "You can now build and run docker-compose:" -ForegroundColor Yellow
     Write-Host "  docker-compose build" -ForegroundColor White

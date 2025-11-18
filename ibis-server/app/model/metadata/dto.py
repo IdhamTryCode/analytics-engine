@@ -10,7 +10,7 @@ class MetadataDTO(BaseModel):
     connection_info: dict[str, Any] | ConnectionInfo = Field(alias="connectionInfo")
 
 
-class RustWrenEngineColumnType(Enum):
+class RustAnalyticsEngineColumnType(Enum):
     BOOL = "BOOL"
     TINYINT = "TINYINT"
     INT2 = "INT2"

@@ -14,7 +14,7 @@ target/
 .checkstyle
 .mvn/timing.properties
 .mvn/maven.config
-wren-server/etc
+analytics-server/etc
 /**/var/
 __pycache__/
 venv/

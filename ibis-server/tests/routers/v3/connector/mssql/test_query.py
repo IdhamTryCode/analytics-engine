@@ -4,12 +4,12 @@ import orjson
 import pytest
 
 from app.dependencies import (
-    X_WREN_FALLBACK_DISABLE,
+    X_ANALYTICS_FALLBACK_DISABLE,
 )
 from tests.routers.v3.connector.mssql.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
@@ -39,10 +39,10 @@ async def test_unicode_literal(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT id FROM wren.public.unicode_test WHERE letter = '真夜中'",
+            "sql": "SELECT id FROM analytics.public.unicode_test WHERE letter = '真夜中'",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -54,10 +54,10 @@ async def test_unicode_literal(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT id FROM wren.public.unicode_test WHERE letter = 'ZUTOMAYO'",
+            "sql": "SELECT id FROM analytics.public.unicode_test WHERE letter = 'ZUTOMAYO'",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200

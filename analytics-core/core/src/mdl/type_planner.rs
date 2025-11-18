@@ -6,9 +6,9 @@ use datafusion::{
 };
 
 #[derive(Debug, Clone, Default)]
-pub struct WrenTypePlanner {}
+pub struct AnalyticsTypePlanner {}
 
-impl TypePlanner for WrenTypePlanner {
+impl TypePlanner for AnalyticsTypePlanner {
     fn plan_type(&self, sql_type: &SQLDataType) -> Result<Option<DataType>> {
         match sql_type {
             SQLDataType::Int64 => Ok(Some(DataType::Int64)),

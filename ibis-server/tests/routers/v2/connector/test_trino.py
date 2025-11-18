@@ -6,7 +6,7 @@ import pytest
 from testcontainers.trino import TrinoContainer
 from trino.dbapi import connect
 
-from app.model.data_source import X_WREN_DB_STATEMENT_TIMEOUT
+from app.model.data_source import X_ANALYTICS_DB_STATEMENT_TIMEOUT
 
 pytestmark = pytest.mark.trino
 
@@ -351,7 +351,7 @@ async def test_connection_timeout(client, manifest_str, trino: TrinoContainer):
             "manifestStr": manifest_str,
             "sql": "SELECT memory.default.sleep(3)",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert response.status_code == 504  # Gateway Timeout
     assert "Query was cancelled:" in response.text
@@ -364,7 +364,7 @@ async def test_connection_timeout(client, manifest_str, trino: TrinoContainer):
             "manifestStr": manifest_str,
             "sql": "SELECT memory.default.sleep(3)",  # This will take longer than the default timeout
         },
-        headers={X_WREN_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
+        headers={X_ANALYTICS_DB_STATEMENT_TIMEOUT: "1"},  # Set timeout to 1 second
     )
     assert response.status_code == 504  # Gateway Timeout
     assert "Query was cancelled:" in response.text

@@ -3,7 +3,7 @@ import base64
 import orjson
 import pytest
 
-from app.dependencies import X_WREN_FALLBACK_DISABLE
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE
 from tests.routers.v3.connector.oracle.conftest import base_url
 
 manifest = {
@@ -92,7 +92,7 @@ async def test_query(client, manifest_str, connection_info):
             "sql": 'SELECT * FROM "Orders" LIMIT 1',
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -133,7 +133,7 @@ async def test_query_with_connection_url(client, manifest_str, connection_url):
             "sql": 'SELECT * FROM "Orders" LIMIT 1',
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -159,7 +159,7 @@ async def test_query_with_dsn(client, manifest_str, connection_info):
             "sql": 'SELECT * FROM "Orders" LIMIT 1',
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -207,7 +207,7 @@ async def test_query_number_scale(client, connection_info):
             "sql": 'SELECT * FROM "TestNumber" LIMIT 1',
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -231,7 +231,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": "SELECT letter FROM null_test ORDER BY id",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
+            X_ANALYTICS_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
         },
     )
     assert response.status_code == 200
@@ -249,7 +249,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": 'SELECT "letter" FROM "null_test" ORDER BY "id" desc',
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
+            X_ANALYTICS_FALLBACK_DISABLE: "true",  # Disable fallback to DuckDB
         },
     )
     assert response.status_code == 200

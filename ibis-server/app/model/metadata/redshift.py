@@ -6,7 +6,7 @@ from app.model.metadata.dto import (
     Column,
     Constraint,
     ConstraintType,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -15,39 +15,39 @@ from app.model.metadata.metadata import Metadata
 # Redshift-specific type mapping
 # Reference: https://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
 REDSHIFT_TYPE_MAPPING = {
-    "text": RustWrenEngineColumnType.TEXT,
-    "char": RustWrenEngineColumnType.CHAR,
-    "character": RustWrenEngineColumnType.CHAR,
-    "bpchar": RustWrenEngineColumnType.CHAR,
-    "name": RustWrenEngineColumnType.CHAR,
-    "character varying": RustWrenEngineColumnType.VARCHAR,
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "bigint": RustWrenEngineColumnType.BIGINT,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "int4": RustWrenEngineColumnType.INTEGER,
-    "integer": RustWrenEngineColumnType.INTEGER,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "int2": RustWrenEngineColumnType.SMALLINT,
-    "real": RustWrenEngineColumnType.REAL,
-    "float4": RustWrenEngineColumnType.REAL,
-    "double precision": RustWrenEngineColumnType.DOUBLE,
-    "float8": RustWrenEngineColumnType.DOUBLE,
-    "numeric": RustWrenEngineColumnType.DECIMAL,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "boolean": RustWrenEngineColumnType.BOOL,
-    "bool": RustWrenEngineColumnType.BOOL,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp without time zone": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp with time zone": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "timestamptz": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "date": RustWrenEngineColumnType.DATE,
-    "time": RustWrenEngineColumnType.TIME,
-    "interval": RustWrenEngineColumnType.INTERVAL,
-    "json": RustWrenEngineColumnType.JSON,
-    "bytea": RustWrenEngineColumnType.BYTEA,
-    "uuid": RustWrenEngineColumnType.UUID,
-    "inet": RustWrenEngineColumnType.INET,
-    "oid": RustWrenEngineColumnType.OID,
+    "text": RustAnalyticsEngineColumnType.TEXT,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "character": RustAnalyticsEngineColumnType.CHAR,
+    "bpchar": RustAnalyticsEngineColumnType.CHAR,
+    "name": RustAnalyticsEngineColumnType.CHAR,
+    "character varying": RustAnalyticsEngineColumnType.VARCHAR,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "int4": RustAnalyticsEngineColumnType.INTEGER,
+    "integer": RustAnalyticsEngineColumnType.INTEGER,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "int2": RustAnalyticsEngineColumnType.SMALLINT,
+    "real": RustAnalyticsEngineColumnType.REAL,
+    "float4": RustAnalyticsEngineColumnType.REAL,
+    "double precision": RustAnalyticsEngineColumnType.DOUBLE,
+    "float8": RustAnalyticsEngineColumnType.DOUBLE,
+    "numeric": RustAnalyticsEngineColumnType.DECIMAL,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
+    "bool": RustAnalyticsEngineColumnType.BOOL,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp without time zone": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp with time zone": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "timestamptz": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "time": RustAnalyticsEngineColumnType.TIME,
+    "interval": RustAnalyticsEngineColumnType.INTERVAL,
+    "json": RustAnalyticsEngineColumnType.JSON,
+    "bytea": RustAnalyticsEngineColumnType.BYTEA,
+    "uuid": RustAnalyticsEngineColumnType.UUID,
+    "inet": RustAnalyticsEngineColumnType.INET,
+    "oid": RustAnalyticsEngineColumnType.OID,
 }
 
 
@@ -175,24 +175,24 @@ class RedshiftMetadata(Metadata):
 
     def _transform_redshift_column_type(
         self, data_type: str
-    ) -> RustWrenEngineColumnType:
-        """Transform Redshift data type to RustWrenEngineColumnType.
+    ) -> RustAnalyticsEngineColumnType:
+        """Transform Redshift data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The Redshift data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Convert to lowercase for comparison
         normalized_type = data_type.lower()
 
         # Use the module-level mapping table
         mapped_type = REDSHIFT_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Redshift data type: {data_type}")
 
         return mapped_type

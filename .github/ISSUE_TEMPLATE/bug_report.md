@@ -24,7 +24,7 @@ If applicable, add screenshots to help explain your problem.
 **Desktop (please complete the following information):**
 - OS: [e.g. Windows, Linux, Mac, Mac Arm ...]
 
-**Wren AI Information**
+**Analytics AI Information**
 - Version: [e.g, 0.1.0]
 
 **Additional context**

@@ -6,7 +6,7 @@ import pytest
 from tests.routers.v3.connector.redshift.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
@@ -62,7 +62,7 @@ async def test_query(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders ORDER BY orderkey LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders ORDER BY orderkey LIMIT 1",
         },
     )
     assert response.status_code == 200
@@ -98,7 +98,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders",
+            "sql": "SELECT * FROM analytics.public.orders",
         },
     )
     assert response.status_code == 200
@@ -111,7 +111,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 10",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 10",
         },
     )
     assert response.status_code == 200
@@ -125,7 +125,7 @@ async def test_query_with_invalid_manifest_str(client, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": "xxx",
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -136,7 +136,7 @@ async def test_query_without_manifest(client, connection_info):
         url=f"{base_url}/query",
         json={
             "connectionInfo": connection_info,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -163,7 +163,7 @@ async def test_query_without_connection_info(client, manifest_str):
         url=f"{base_url}/query",
         json={
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -180,7 +180,7 @@ async def test_query_with_dry_run(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 204

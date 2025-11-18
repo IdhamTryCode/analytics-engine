@@ -5,14 +5,14 @@ use std::collections::hash_map::Entry;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use analytics_core::mdl::manifest::{Model, Relationship, View};
-use analytics_core::mdl::WrenMDL;
+use analytics_core::mdl::AnalyticsMDL;
 use analytics_core_base::mdl::Manifest;
 
 #[pyclass]
 #[derive(Clone)]
 #[pyo3(name = "ManifestExtractor")]
 pub struct PyManifestExtractor {
-    mdl: Arc<WrenMDL>,
+    mdl: Arc<AnalyticsMDL>,
 }
 
 #[pymethods]
@@ -24,7 +24,7 @@ impl PyManifestExtractor {
             .ok_or_else(|| CoreError::new("Expected a valid base64 encoded string for the model definition, but got None."))
             .and_then(to_manifest)
             .map(|manifest| Self {
-                mdl: WrenMDL::new_ref(manifest),
+                mdl: AnalyticsMDL::new_ref(manifest),
             })
     }
 
@@ -42,7 +42,7 @@ impl PyManifestExtractor {
     }
 }
 
-fn resolve_used_table_names(mdl: &WrenMDL, sql: &str) -> Result<Vec<String>, CoreError> {
+fn resolve_used_table_names(mdl: &AnalyticsMDL, sql: &str) -> Result<Vec<String>, CoreError> {
     let mut config = analytics_core::SessionConfig::new();
     config.options_mut().sql_parser.enable_ident_normalization = false;
     let ctx_state = analytics_core::SessionContext::new_with_config(config).state();
@@ -67,7 +67,7 @@ fn resolve_used_table_names(mdl: &WrenMDL, sql: &str) -> Result<Vec<String>, Cor
 }
 
 fn extract_manifest(
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     used_datasets: &[String],
 ) -> Result<Manifest, CoreError> {
     let extracted_models = extract_models(mdl, used_datasets);
@@ -90,7 +90,7 @@ fn extract_manifest(
     })
 }
 
-fn extract_models(mdl: &WrenMDL, used_datasets: &[String]) -> Vec<Arc<Model>> {
+fn extract_models(mdl: &AnalyticsMDL, used_datasets: &[String]) -> Vec<Arc<Model>> {
     let mut used_set: HashMap<String, usize> =
         used_datasets.iter().map(|s| (s.clone(), 0)).collect();
     let mut stack: Vec<String> = used_datasets.to_vec();
@@ -122,7 +122,7 @@ fn extract_models(mdl: &WrenMDL, used_datasets: &[String]) -> Vec<Arc<Model>> {
 }
 
 fn extract_views(
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     used_datasets: &[String],
 ) -> (Vec<Arc<View>>, Vec<Arc<Model>>) {
     let used_set: HashSet<&str> = used_datasets.iter().map(String::as_str).collect();
@@ -148,7 +148,7 @@ fn extract_views(
 }
 
 fn extract_relationships(
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     used_models: &[Arc<Model>],
 ) -> Vec<Arc<Relationship>> {
     let model_names: Vec<_> = used_models.iter().map(|m| m.name.as_str()).collect();

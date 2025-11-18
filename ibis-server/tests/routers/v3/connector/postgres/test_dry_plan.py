@@ -6,7 +6,7 @@ import pytest
 from tests.routers.v3.connector.postgres.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
@@ -39,7 +39,7 @@ async def test_dry_plan(client, manifest_str):
         url=f"{base_url}/dry-plan",
         json={
             "manifestStr": manifest_str,
-            "sql": "SELECT o_orderkey, order_cust_key FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT o_orderkey, order_cust_key FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 200

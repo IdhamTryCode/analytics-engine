@@ -1,5 +1,5 @@
 [package]
-name = "wren-sqllogictest"
+name = "analytics-sqllogictest"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
@@ -10,7 +10,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [lib]
-name = "wren_sqllogictest"
+name = "analytics_sqllogictest"
 path = "src/lib.rs"
 
 [dependencies]

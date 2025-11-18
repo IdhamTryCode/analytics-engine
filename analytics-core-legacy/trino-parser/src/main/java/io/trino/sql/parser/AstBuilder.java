@@ -1829,7 +1829,7 @@ public class AstBuilder
     {
         QualifiedName name = getQualifiedName(context.functionExpression().qualifiedName());
 
-        // wren function: metric roll_up and duckdb table function
+        // analytics function: metric roll_up and duckdb table function
         if (name.toString().equalsIgnoreCase("roll_up") || isDuckDBTableFunction(name.toString())) {
             List<Expression> arguments = visit(context.functionExpression().expression(), Expression.class);
             return new FunctionRelation(getLocation(context), name, arguments);

@@ -1,11 +1,11 @@
 # Ibis Server Module
-This module is the API server of Wren Engine. It's built on top of [FastAPI](https://fastapi.tiangolo.com/). It provides several APIs for SQL queries. A SQL query will be planned by [analytics-core](../analytics-core/), transpiled by [sqlglot](https://github.com/tobymao/sqlglot), and then executed by [ibis](https://github.com/ibis-project/ibis) to query the database.
+This module is the API server of Analytics Engine. It's built on top of [FastAPI](https://fastapi.tiangolo.com/). It provides several APIs for SQL queries. A SQL query will be planned by [analytics-core](../analytics-core/), transpiled by [sqlglot](https://github.com/tobymao/sqlglot), and then executed by [ibis](https://github.com/ibis-project/ibis) to query the database.
 
 ## Quick Start
 
 ### Running Ibis Server on Docker
 You can follow the steps below to run the Java engine and ibis.
-> Wren Engine is migrating to [analytics-core](../analytics-core/). However, we still recommend starting [the Java engine](../analytics-core-legacy/) to enable the query fallback mechanism.
+> Analytics Engine is migrating to [analytics-core](../analytics-core/). However, we still recommend starting [the Java engine](../analytics-core-legacy/) to enable the query fallback mechanism.
 
 Create `compose.yaml` file and add the following content, edit environment variables if needed (see [Environment Variables](docs/development#environment-variables)).
 ```yaml
@@ -50,7 +50,7 @@ Requirements:
 
 Clone the repository
 ```bash
-git clone git@github.com:Canner/wren-engine.git
+git clone git@github.com:Canner/analytics-engine.git
 ```
 Start Java engine for the feature rewriting-queries
 ```bash
@@ -79,15 +79,15 @@ Install the dependencies
 ```bash
 just install
 ```
-Launch a CLI with an active Wren session using the following command:
+Launch a CLI with an active Analytics session using the following command:
 ```
-python -m wren local_file <mdl_path> <connection_info_path>
+python -m analytics local_file <mdl_path> <connection_info_path>
 ```
-This will create an interactive CLI environment with a `wren.session.Context` instance for querying your database.
+This will create an interactive CLI environment with a `analytics.session.Context` instance for querying your database.
 ```
 Session created: Context(id=1352f5de-a8a7-4342-b2cf-015dbb2bba4f, data_source=local_file)
-You can now interact with the Wren session using the 'wren' variable:
-> task = wren.sql('SELECT * FROM your_table').execute()
+You can now interact with the Analytics session using the 'analytics' variable:
+> task = analytics.sql('SELECT * FROM your_table').execute()
 > print(task.results)
 > print(task.formatted_result())
 Python 3.11.11 (main, Dec  3 2024, 17:20:40) [Clang 16.0.0 (clang-1600.0.26.4)] on darwin
@@ -97,11 +97,11 @@ Type "help", "copyright", "credits" or "license" for more information.
 ```
 
 ### Start with Jupyter Notebook
-Launch a Jupyter notebook server with Wren engine dependencies using Docker:
+Launch a Jupyter notebook server with Analytics engine dependencies using Docker:
 ```
 docker run --rm -p 8888:8888 ghcr.io/canner/analytics-engine-ibis:latest jupyter
 ```
-Explore the demo notebooks to learn how to use the Wren session context:
+Explore the demo notebooks to learn how to use the Analytics session context:
 ```
 http://localhost:8888/lab/doc/tree/notebooks/demo.ipynb
 ```
@@ -143,8 +143,8 @@ just run-trace-otlp
 Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for more information.
 
 ### Report the Migration Issue
-Wren engine is migrating to v3 API (powered by Rust and DataFusion). However, there are some SQL issues currently.
-If you find the migration message in your log, we hope you can provide the message and related information to the Wren AI Team.
+Analytics engine is migrating to v3 API (powered by Rust and DataFusion). However, there are some SQL issues currently.
+If you find the migration message in your log, we hope you can provide the message and related information to the Analytics AI Team.
 Just raise an issue on GitHub or contact us in the Discord channel.
 
 The message would look like the following log:
@@ -155,14 +155,14 @@ The message would look like the following log:
 2025-03-19 22:49:08.804 | [62781772-7120-4482-b7ca-4be65c8fda96] | WARN    | connector.query:61 - Failed to execute v3 query, fallback to v2: DataFusion error: ModelAnalyzeRule
 caused by
 Schema error: No field named o_orderkey.
-Wren engine is migrating to Rust version now. Wren AI team are appreciate if you can provide the error messages and related logs for us.
+Analytics engine is migrating to Rust version now. Analytics AI team are appreciate if you can provide the error messages and related logs for us.
 ```
 
 #### Steps to Report an Issue
 1. **Identify the Issue**: Look for the migration message in your log files.
 2. **Gather Information**: Collect the error message and any related logs.
 3. **Report the Issue**:
-   - **GitHub**: Open an issue on our [GitHub repository](https://github.com/Canner/wren-engine/issues) and include the collected information.
+   - **GitHub**: Open an issue on our [GitHub repository](https://github.com/Canner/analytics-engine/issues) and include the collected information.
    - **Discord**: Join our [Discord channel](https://discord.gg/5DvshJqG8Z) and share the details with us.
 
 Providing detailed information helps us to diagnose and fix the issues more efficiently. Thank you for your cooperation!

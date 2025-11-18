@@ -1,6 +1,6 @@
 use datafusion::error::Result;
 use structopt::StructOpt;
-use wren_benchmarks::tpch;
+use analytics_benchmarks::tpch;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "TPC-H", about = "TPC-H Benchmarks.")]

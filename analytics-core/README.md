@@ -1,6 +1,6 @@
-# Wren Core Module
+# Analytics Core Module
 
-The Wren Core module serves as the semantic core of the Wren engine. To understand the concept of the Wren engine, refer to the [Wren engine documentation](https://docs.getwren.ai/oss/engine/concept/what_is_semantics). 
+The Analytics Core module serves as the semantic core of the Analytics engine. To understand the concept of the Analytics engine, refer to the [Analytics engine documentation](https://docs.getanalytics.ai/oss/engine/concept/what_is_semantics). 
 
 This module is utilized by the API v3 of the ibis-server for SQL planning. Additionally, there is another module for Python bindings, [analytics-core-py](../analytics-core-py/), which is also used by the [ibis-server](../ibis-server/).
 

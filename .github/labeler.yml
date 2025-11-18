@@ -32,4 +32,4 @@ ci:
 
 v1-engine-changed:
 - changed-files:
-  - any-glob-to-any-file: ['wren-base/**', 'wren-main/**', 'wren-server/**', 'wren-tests/**', 'trino-parser/**', 'pom.xml']
+  - any-glob-to-any-file: ['analytics-base/**', 'analytics-main/**', 'analytics-server/**', 'analytics-tests/**', 'trino-parser/**', 'pom.xml']

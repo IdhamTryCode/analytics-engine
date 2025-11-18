@@ -46,7 +46,7 @@ impl ManifestBuilder {
     pub fn new() -> Self {
         Self {
             manifest: Manifest {
-                catalog: "wrenai".to_string(),
+                catalog: "analyticsai".to_string(),
                 schema: "public".to_string(),
                 models: vec![],
                 relationships: vec![],
@@ -559,7 +559,7 @@ mod test {
         assert_eq!(actual, model);
 
         let model = ModelBuilder::new("test")
-            .table_reference(r#""Wren"."Public"."Source""#)
+            .table_reference(r#""Analytics"."Public"."Source""#)
             .column(ColumnBuilder::new("id", "integer").build())
             .build();
 
@@ -682,7 +682,7 @@ mod test {
             .build();
 
         let expected = crate::mdl::builder::ManifestBuilder::new()
-            .catalog("wrenai")
+            .catalog("analyticsai")
             .schema("public")
             .model(model)
             .relationship(relationship)

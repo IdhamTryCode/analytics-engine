@@ -22,8 +22,8 @@ pub fn to_manifest(mdl_base64: &str) -> Result<Manifest, CoreError> {
     Ok(manifest)
 }
 
-/// Check if the MDL can be used by the v2 wren core. If there are any access controls rules,
-/// the MDL should be used by the v3 wren core only.
+/// Check if the MDL can be used by the v2 analytics core. If there are any access controls rules,
+/// the MDL should be used by the v3 analytics core only.
 #[pyfunction]
 pub fn is_backward_compatible(mdl_base64: &str) -> Result<bool, CoreError> {
     let manifest = to_manifest(mdl_base64)?;

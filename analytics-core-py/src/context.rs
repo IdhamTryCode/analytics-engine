@@ -32,22 +32,22 @@ use tokio::runtime::Runtime;
 use analytics_core::array::AsArray;
 use analytics_core::ast::{visit_statements_mut, Expr, Statement, Value, ValueWithSpan};
 use analytics_core::dialect::GenericDialect;
-use analytics_core::mdl::context::apply_wren_on_ctx;
+use analytics_core::mdl::context::apply_analytics_on_ctx;
 use analytics_core::mdl::function::{
     ByPassAggregateUDF, ByPassScalarUDF, ByPassWindowFunction, FunctionType,
     RemoteFunction,
 };
 use analytics_core::{
-    mdl, AggregateUDF, AnalyzedWrenMDL, ScalarUDF, SessionConfig, WindowUDF,
+    mdl, AggregateUDF, AnalyzedAnalyticsMDL, ScalarUDF, SessionConfig, WindowUDF,
 };
 
-/// The Python wrapper for the Wren Core session context.
+/// The Python wrapper for the Analytics Core session context.
 #[pyclass(name = "SessionContext")]
 #[derive(Clone)]
 pub struct PySessionContext {
     ctx: analytics_core::SessionContext,
     exec_ctx: analytics_core::SessionContext,
-    mdl: Arc<AnalyzedWrenMDL>,
+    mdl: Arc<AnalyzedAnalyticsMDL>,
     properties: Arc<HashMap<String, Option<String>>>,
     runtime: Arc<Runtime>,
 }
@@ -63,7 +63,7 @@ impl Default for PySessionContext {
         Self {
             ctx: analytics_core::SessionContext::new(),
             exec_ctx: analytics_core::SessionContext::new(),
-            mdl: Arc::new(AnalyzedWrenMDL::default()),
+            mdl: Arc::new(AnalyzedAnalyticsMDL::default()),
             properties: Arc::new(HashMap::new()),
             runtime: Arc::new(Runtime::new().unwrap()),
         }
@@ -91,7 +91,7 @@ impl PySessionContext {
             .collect::<Vec<_>>();
 
         let config = SessionConfig::default().with_information_schema(true);
-        let ctx = analytics_core::mdl::create_wren_ctx(Some(config));
+        let ctx = analytics_core::mdl::create_analytics_ctx(Some(config));
         let runtime = Runtime::new().map_err(CoreError::from)?;
 
         let registered_functions = runtime
@@ -119,7 +119,7 @@ impl PySessionContext {
             return Ok(Self {
                 ctx: ctx.clone(),
                 exec_ctx: ctx,
-                mdl: Arc::new(AnalyzedWrenMDL::default()),
+                mdl: Arc::new(AnalyzedAnalyticsMDL::default()),
                 properties: Arc::new(HashMap::new()),
                 runtime: Arc::new(runtime),
             });
@@ -161,7 +161,7 @@ impl PySessionContext {
             };
             let manifest = to_manifest(mdl_base64)?;
             let properties_ref = Arc::new(properties_map);
-            match AnalyzedWrenMDL::analyze(
+            match AnalyzedAnalyticsMDL::analyze(
                 manifest,
                 Arc::clone(&properties_ref),
                 mdl::context::Mode::Unparse,
@@ -169,7 +169,7 @@ impl PySessionContext {
                 Ok(analyzed_mdl) => {
                     let analyzed_mdl = Arc::new(analyzed_mdl);
                     let unparser_ctx = runtime
-                        .block_on(apply_wren_on_ctx(
+                        .block_on(apply_analytics_on_ctx(
                             &ctx,
                             Arc::clone(&analyzed_mdl),
                             Arc::clone(&properties_ref),
@@ -178,7 +178,7 @@ impl PySessionContext {
                         .map_err(CoreError::from)?;
 
                     let exec_ctx = runtime
-                        .block_on(apply_wren_on_ctx(
+                        .block_on(apply_analytics_on_ctx(
                             &ctx,
                             Arc::clone(&analyzed_mdl),
                             Arc::clone(&properties_ref),
@@ -202,7 +202,7 @@ impl PySessionContext {
         })
     }
 
-    /// Transform the given Wren SQL to the equivalent Planned SQL.
+    /// Transform the given Analytics SQL to the equivalent Planned SQL.
     #[pyo3(signature = (sql=None))]
     pub fn transform_sql(&self, sql: Option<&str>) -> PyResult<String> {
         env_logger::try_init().ok();

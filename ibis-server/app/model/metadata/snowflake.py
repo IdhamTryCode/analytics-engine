@@ -8,7 +8,7 @@ from app.model.metadata.dto import (
     Column,
     Constraint,
     ConstraintType,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -18,38 +18,38 @@ from app.model.metadata.metadata import Metadata
 # All possible types listed here: https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
 SNOWFLAKE_TYPE_MAPPING = {
     # Numeric Types
-    "number": RustWrenEngineColumnType.NUMERIC,
-    "decimal": RustWrenEngineColumnType.NUMERIC,
-    "numeric": RustWrenEngineColumnType.NUMERIC,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "integer": RustWrenEngineColumnType.INTEGER,
-    "bigint": RustWrenEngineColumnType.BIGINT,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "byteint": RustWrenEngineColumnType.TINYINT,
+    "number": RustAnalyticsEngineColumnType.NUMERIC,
+    "decimal": RustAnalyticsEngineColumnType.NUMERIC,
+    "numeric": RustAnalyticsEngineColumnType.NUMERIC,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "integer": RustAnalyticsEngineColumnType.INTEGER,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "byteint": RustAnalyticsEngineColumnType.TINYINT,
     # Float Types
-    "float4": RustWrenEngineColumnType.FLOAT4,
-    "float": RustWrenEngineColumnType.FLOAT8,
-    "float8": RustWrenEngineColumnType.FLOAT8,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "double precision": RustWrenEngineColumnType.DOUBLE,
-    "real": RustWrenEngineColumnType.REAL,
+    "float4": RustAnalyticsEngineColumnType.FLOAT4,
+    "float": RustAnalyticsEngineColumnType.FLOAT8,
+    "float8": RustAnalyticsEngineColumnType.FLOAT8,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "double precision": RustAnalyticsEngineColumnType.DOUBLE,
+    "real": RustAnalyticsEngineColumnType.REAL,
     # String Types
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "char": RustWrenEngineColumnType.CHAR,
-    "character": RustWrenEngineColumnType.CHAR,
-    "string": RustWrenEngineColumnType.STRING,
-    "text": RustWrenEngineColumnType.TEXT,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "character": RustAnalyticsEngineColumnType.CHAR,
+    "string": RustAnalyticsEngineColumnType.STRING,
+    "text": RustAnalyticsEngineColumnType.TEXT,
     # Boolean Types
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Date and Time Types
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp_ntz": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp_tz": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "variant": RustWrenEngineColumnType.VARIANT,
-    "object": RustWrenEngineColumnType.JSON,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp_ntz": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp_tz": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "variant": RustAnalyticsEngineColumnType.VARIANT,
+    "object": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -162,24 +162,24 @@ class SnowflakeMetadata(Metadata):
     ):
         return f"{table_name}_{column_name}_{referenced_table_name}_{referenced_column_name}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform Snowflake data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform Snowflake data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The Snowflake data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Convert to lowercase for comparison
         normalized_type = data_type.lower()
 
         # Use the module-level mapping table
         mapped_type = SNOWFLAKE_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Snowflake data type: {data_type}")
 
         return mapped_type

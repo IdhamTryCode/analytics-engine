@@ -9,7 +9,7 @@ use datafusion::sql::TableReference;
 use petgraph::Graph;
 
 use crate::logical_plan::utils::from_qualified_name;
-use crate::mdl::{utils, WrenMDL};
+use crate::mdl::{utils, AnalyticsMDL};
 
 
 use super::manifest::{JoinType, Relationship};
@@ -25,7 +25,7 @@ pub struct Lineage {
 }
 
 impl Lineage {
-    pub fn new(mdl: &WrenMDL) -> Result<Self> {
+    pub fn new(mdl: &AnalyticsMDL) -> Result<Self> {
         let source_columns_map = Lineage::collect_source_columns(mdl)?;
         let RequiredInfo {
             required_fields_map,
@@ -39,7 +39,7 @@ impl Lineage {
     }
 
 
-    fn collect_source_columns(mdl: &WrenMDL) -> Result<HashMap<Column, HashSet<Column>>> {
+    fn collect_source_columns(mdl: &AnalyticsMDL) -> Result<HashMap<Column, HashSet<Column>>> {
         let mut source_columns_map = HashMap::new();
 
         for model in mdl.manifest.models.iter() {
@@ -81,7 +81,7 @@ impl Lineage {
         Ok(source_columns_map)
     }
     fn collect_required_fields(
-        mdl: &WrenMDL,
+        mdl: &AnalyticsMDL,
         source_columns_map: &HashMap<Column, HashSet<Column>>,
     ) -> Result<RequiredInfo> {
         let mut required_fields_map: HashMap<Column, HashSet<Column>> = HashMap::new();
@@ -256,7 +256,7 @@ impl Lineage {
 }
 
 fn consume_pending_field(
-    mdl: &WrenMDL,
+    mdl: &AnalyticsMDL,
     required_fields_map: &mut HashMap<Column, HashSet<Column>>,
     value: Column,
     source_column: &Column,
@@ -347,7 +347,7 @@ mod test {
     use crate::mdl::lineage::Lineage;
     use crate::mdl::manifest::JoinType;
     use crate::mdl::Dataset;
-    use crate::mdl::WrenMDL;
+    use crate::mdl::AnalyticsMDL;
 
     #[test]
     fn test_collect_source_columns() -> Result<()> {
@@ -406,35 +406,35 @@ mod test {
             )
             .build();
 
-        let wren_mdl = WrenMDL::new(manifest);
-        let lineage = Lineage::new(&wren_mdl)?;
+        let analytics_mdl = AnalyticsMDL::new(manifest);
+        let lineage = Lineage::new(&analytics_mdl)?;
         assert_eq!(lineage.source_columns_map.len(), 13);
         assert_eq!(
             lineage
                 .source_columns_map
-                .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_id"))
+                .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_id"))
                 .unwrap()
                 .len(),
             2
         );
         let a1_concat_b1 = lineage
             .source_columns_map
-            .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_b1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_b1"))
             .unwrap();
         assert_eq!(a1_concat_b1.len(), 2);
         assert!(a1_concat_b1.contains(&Column {
-            relation: Some(TableReference::full("wrenai", "public", "a")),
+            relation: Some(TableReference::full("analyticsai", "public", "a")),
             name: "b.b1".to_string(),
             spans: Spans::new(),
         }));
 
         let a1_concat_c1 = lineage
             .source_columns_map
-            .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_c1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_c1"))
             .unwrap();
         assert_eq!(a1_concat_c1.len(), 2);
         assert!(a1_concat_c1.contains(&Column {
-            relation: Some(TableReference::full("wrenai", "public", "a")),
+            relation: Some(TableReference::full("analyticsai", "public", "a")),
             name: "b.c.c1".to_string(),
             spans: Spans::new(),
         }));
@@ -472,27 +472,27 @@ mod test {
                     .build(),
             )
             .build();
-        let wren_mdl = WrenMDL::new(manifest);
-        let lineage = Lineage::new(&wren_mdl)?;
+        let analytics_mdl = AnalyticsMDL::new(manifest);
+        let lineage = Lineage::new(&analytics_mdl)?;
         assert_eq!(lineage.source_columns_map.len(), 7);
         assert!(lineage
             .source_columns_map
-            .contains_key(&Column::from_qualified_name(r#"wrenai.public."A"."A1""#)));
+            .contains_key(&Column::from_qualified_name(r#"analyticsai.public."A"."A1""#)));
 
         assert!(lineage
             .source_columns_map
             .contains_key(&Column::from_qualified_name(
-                r#"wrenai.public."A"."A1_concat_native""#
+                r#"analyticsai.public."A"."A1_concat_native""#
             )));
 
         let a1_concat_c1 = lineage
             .required_fields_map
-            .get(&Column::from_qualified_name("wrenai.public.b.a_id"))
+            .get(&Column::from_qualified_name("analyticsai.public.b.a_id"))
             .unwrap();
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name(r#"wrenai.public."A"."A1""#),
-            Column::from_qualified_name(r#"wrenai.public."A"."Id""#),
-            Column::from_qualified_name("wrenai.public.b.a1"),
+            Column::from_qualified_name(r#"analyticsai.public."A"."A1""#),
+            Column::from_qualified_name(r#"analyticsai.public."A"."Id""#),
+            Column::from_qualified_name("analyticsai.public.b.a1"),
         ]);
         assert_eq!(a1_concat_c1.len(), 3);
         assert_eq!(a1_concat_c1, &expected);
@@ -567,13 +567,13 @@ mod test {
                     .build(),
             )
             .build();
-        let wren_mdl = WrenMDL::new(manifest);
-        let lineage = Lineage::new(&wren_mdl)?;
+        let analytics_mdl = AnalyticsMDL::new(manifest);
+        let lineage = Lineage::new(&analytics_mdl)?;
         assert_eq!(lineage.required_fields_map.len(), 6);
         assert_eq!(
             lineage
                 .required_fields_map
-                .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_id"))
+                .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_id"))
                 .unwrap()
                 .len(),
             2
@@ -581,38 +581,38 @@ mod test {
 
         let a1_concat_b1 = lineage
             .required_fields_map
-            .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_b1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_b1"))
             .unwrap();
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name("wrenai.public.a.a1"),
-            Column::from_qualified_name("wrenai.public.b.a1"),
-            Column::from_qualified_name("wrenai.public.b.b1"),
+            Column::from_qualified_name("analyticsai.public.a.a1"),
+            Column::from_qualified_name("analyticsai.public.b.a1"),
+            Column::from_qualified_name("analyticsai.public.b.b1"),
         ]);
         assert_eq!(a1_concat_b1.len(), 3);
         assert_eq!(a1_concat_b1, &expected);
 
         let a1_concat_c1 = lineage
             .required_fields_map
-            .get(&Column::from_qualified_name("wrenai.public.a.a1_concat_c1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.a1_concat_c1"))
             .unwrap();
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name("wrenai.public.a.a1"),
-            Column::from_qualified_name("wrenai.public.b.a1"),
-            Column::from_qualified_name("wrenai.public.b.b1"),
-            Column::from_qualified_name("wrenai.public.c.b1"),
-            Column::from_qualified_name("wrenai.public.c.c1"),
+            Column::from_qualified_name("analyticsai.public.a.a1"),
+            Column::from_qualified_name("analyticsai.public.b.a1"),
+            Column::from_qualified_name("analyticsai.public.b.b1"),
+            Column::from_qualified_name("analyticsai.public.c.b1"),
+            Column::from_qualified_name("analyticsai.public.c.c1"),
         ]);
         assert_eq!(a1_concat_c1.len(), 5);
         assert_eq!(a1_concat_c1, &expected);
 
         let c1 = lineage
             .required_fields_map
-            .get(&Column::from_qualified_name("wrenai.public.b.c1"))
+            .get(&Column::from_qualified_name("analyticsai.public.b.c1"))
             .unwrap();
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name("wrenai.public.b.b1"),
-            Column::from_qualified_name("wrenai.public.c.b1"),
-            Column::from_qualified_name("wrenai.public.c.c1"),
+            Column::from_qualified_name("analyticsai.public.b.b1"),
+            Column::from_qualified_name("analyticsai.public.c.b1"),
+            Column::from_qualified_name("analyticsai.public.c.c1"),
         ]);
         assert_eq!(c1.len(), 3);
         assert_eq!(c1, &expected);
@@ -620,32 +620,32 @@ mod test {
         let a_id_concat_c1 = lineage
             .required_fields_map
             .get(&Column::from_qualified_name(
-                "wrenai.public.b.a_id_concat_c1",
+                "analyticsai.public.b.a_id_concat_c1",
             ))
             .unwrap();
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name("wrenai.public.a.id"),
-            Column::from_qualified_name("wrenai.public.a.a1"),
-            Column::from_qualified_name("wrenai.public.b.a1"),
-            Column::from_qualified_name("wrenai.public.b.b1"),
-            Column::from_qualified_name("wrenai.public.c.b1"),
-            Column::from_qualified_name("wrenai.public.c.c1"),
+            Column::from_qualified_name("analyticsai.public.a.id"),
+            Column::from_qualified_name("analyticsai.public.a.a1"),
+            Column::from_qualified_name("analyticsai.public.b.a1"),
+            Column::from_qualified_name("analyticsai.public.b.b1"),
+            Column::from_qualified_name("analyticsai.public.c.b1"),
+            Column::from_qualified_name("analyticsai.public.c.c1"),
         ]);
         assert_eq!(a_id_concat_c1.len(), 6);
         assert_eq!(a_id_concat_c1, &expected);
 
         let a_b_c1 = lineage
             .required_fields_map
-            .get(&Column::from_qualified_name("wrenai.public.a.b_c1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.b_c1"))
             .unwrap();
 
         let expected: HashSet<Column> = HashSet::from([
-            Column::from_qualified_name("wrenai.public.a.a1"),
-            Column::from_qualified_name("wrenai.public.b.a1"),
-            Column::from_qualified_name("wrenai.public.b.b1"),
-            Column::from_qualified_name("wrenai.public.b.c1"),
-            Column::from_qualified_name("wrenai.public.c.b1"),
-            Column::from_qualified_name("wrenai.public.c.c1"),
+            Column::from_qualified_name("analyticsai.public.a.a1"),
+            Column::from_qualified_name("analyticsai.public.b.a1"),
+            Column::from_qualified_name("analyticsai.public.b.b1"),
+            Column::from_qualified_name("analyticsai.public.b.c1"),
+            Column::from_qualified_name("analyticsai.public.c.b1"),
+            Column::from_qualified_name("analyticsai.public.c.c1"),
         ]);
 
         assert_eq!(a_b_c1, &expected);
@@ -696,23 +696,23 @@ mod test {
                     .build(),
             )
             .build();
-        let wren_mdl = WrenMDL::new(manifest);
-        let lineage = crate::mdl::lineage::Lineage::new(&wren_mdl)?;
+        let analytics_mdl = AnalyticsMDL::new(manifest);
+        let lineage = crate::mdl::lineage::Lineage::new(&analytics_mdl)?;
         assert_eq!(lineage.required_dataset_topo.len(), 2);
         let customer_name = lineage
             .required_dataset_topo
-            .get(&Column::from_qualified_name("wrenai.public.a.c1"))
+            .get(&Column::from_qualified_name("analyticsai.public.a.c1"))
             .unwrap();
         assert_eq!(customer_name.node_count(), 3);
         assert_eq!(customer_name.edge_count(), 2);
         let mut iter = customer_name.node_indices();
         let first = iter.next().unwrap();
         let source = customer_name.node_weight(first).unwrap();
-        assert_eq!(source, &Dataset::Model(wren_mdl.get_model("a").unwrap()));
+        assert_eq!(source, &Dataset::Model(analytics_mdl.get_model("a").unwrap()));
 
         let second = iter.next().unwrap();
         let target = customer_name.node_weight(second).unwrap();
-        assert_eq!(target, &Dataset::Model(wren_mdl.get_model("b").unwrap()));
+        assert_eq!(target, &Dataset::Model(analytics_mdl.get_model("b").unwrap()));
         let first_edge = customer_name.find_edge(first, second).unwrap();
         let edge = customer_name.edge_weight(first_edge).unwrap();
         assert_eq!(edge.join_type, JoinType::OneToOne);
@@ -720,7 +720,7 @@ mod test {
 
         let third = iter.next().unwrap();
         let target = customer_name.node_weight(third).unwrap();
-        assert_eq!(target, &Dataset::Model(wren_mdl.get_model("c").unwrap()));
+        assert_eq!(target, &Dataset::Model(analytics_mdl.get_model("c").unwrap()));
         let second_edge = customer_name.find_edge(second, third).unwrap();
         let edge = customer_name.edge_weight(second_edge).unwrap();
         assert_eq!(edge.join_type, JoinType::OneToOne);

@@ -1144,7 +1144,7 @@ public class TestSqlParser
                                         identifier("col0")))));
     }
 
-    // Wren engine doesn't expect the roundtrip between sql and ast.
+    // Analytics engine doesn't expect the roundtrip between sql and ast.
     // So disable the original trino test.
     @Test
     @Disabled
@@ -2766,7 +2766,7 @@ public class TestSqlParser
         }
     }
 
-    // Wren engine doesn't expect the roundtrip between sql and ast.
+    // Analytics engine doesn't expect the roundtrip between sql and ast.
     // So disable the original trino test.
     @Test
     @Disabled
@@ -2991,7 +2991,7 @@ public class TestSqlParser
                         new SubqueryExpression(simpleQuery(selectList(new LongLiteral("10"))))));
     }
 
-    // Wren engine doesn't expect the roundtrip between sql and ast.
+    // Analytics engine doesn't expect the roundtrip between sql and ast.
     // So disable the original trino test.
     @Test
     @Disabled
@@ -3477,7 +3477,7 @@ public class TestSqlParser
                         ImmutableList.of()));
     }
 
-    // Wren engine doesn't expect the roundtrip between sql and ast.
+    // Analytics engine doesn't expect the roundtrip between sql and ast.
     // So disable the original trino test.
     @Test
     @Disabled
@@ -3510,7 +3510,7 @@ public class TestSqlParser
                         Optional.empty()));
     }
 
-    // Wren engine doesn't expect the roundtrip between sql and ast.
+    // Analytics engine doesn't expect the roundtrip between sql and ast.
     // So disable the original trino test.
     @Test
     @Disabled
@@ -3855,7 +3855,7 @@ public class TestSqlParser
     @Test
     public void testFunctionRelation()
     {
-        assertStatement("SELECT * FROM ROLL_UP(wren.test.metric, col, day)",
+        assertStatement("SELECT * FROM ROLL_UP(analytics.test.metric, col, day)",
                 simpleQuery(
                         new Select(
                                 false,
@@ -3868,7 +3868,7 @@ public class TestSqlParser
                                 null,
                                 QualifiedName.of("ROLL_UP"),
                                 ImmutableList.of(
-                                        DereferenceExpression.from(QualifiedName.of("wren", "test", "metric")),
+                                        DereferenceExpression.from(QualifiedName.of("analytics", "test", "metric")),
                                         new Identifier("col"),
                                         new Identifier("day")))));
     }
