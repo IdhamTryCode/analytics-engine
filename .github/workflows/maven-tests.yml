@@ -13,11 +13,11 @@ on:
       - labeled
       - unlabeled
     paths:
-      - 'wren-core-legacy/**'
+      - 'analytics-core-legacy/**'
 
 defaults:
   run:
-    working-directory: wren-core-legacy
+    working-directory: analytics-core-legacy
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}

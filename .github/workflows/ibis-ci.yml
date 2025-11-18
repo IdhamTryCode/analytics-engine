@@ -30,7 +30,7 @@ jobs:
           java-version: '21'
           cache: 'maven'
       - name: Start Wren JAVA engine
-        working-directory: ./wren-core-legacy
+        working-directory: ./analytics-core-legacy
         run: |
           mkdir etc
           echo "node.environment=production" >> etc/config.properties
@@ -55,8 +55,8 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            wren-core-py/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('wren-core-py/Cargo.lock') }}
+            analytics-core-py/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('analytics-core-py/Cargo.lock') }}
       - name: Install MS ODBC SQL driver
         run: |
           sudo apt-get update
@@ -69,7 +69,7 @@ jobs:
           just install --with dev
       - name: Run tests
         env:
-          WREN_ENGINE_ENDPOINT: http://localhost:8080
+          ANALYTICS_ENGINE_ENDPOINT: http://localhost:8080
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -78,14 +78,14 @@ jobs:
       - name: Test bigquery if need
         if: contains(github.event.pull_request.labels.*.name, 'bigquery')
         env:
-          WREN_ENGINE_ENDPOINT: http://localhost:8080
+          ANALYTICS_ENGINE_ENDPOINT: http://localhost:8080
           TEST_BIG_QUERY_PROJECT_ID: ${{ secrets.TEST_BIG_QUERY_PROJECT_ID }}
           TEST_BIG_QUERY_CREDENTIALS_BASE64_JSON: ${{ secrets.TEST_BIG_QUERY_CREDENTIALS_BASE64_JSON }}
         run: just test bigquery
       - name: Test snowflake if need
         if: contains(github.event.pull_request.labels.*.name, 'snowflake')
         env:
-          WREN_ENGINE_ENDPOINT: http://localhost:8080
+          ANALYTICS_ENGINE_ENDPOINT: http://localhost:8080
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -93,7 +93,7 @@ jobs:
       - name: Test athena if need
         if: contains(github.event.pull_request.labels.*.name, 'athena')
         env:
-          WREN_ENGINE_ENDPOINT: http://localhost:8080
+          ANALYTICS_ENGINE_ENDPOINT: http://localhost:8080
           TEST_ATHENA_S3_STAGING_DIR: s3://wren-ibis-athena-dev/results/
           TEST_ATHENA_AWS_ACCESS_KEY_ID: ${{ secrets.TEST_ATHENA_AWS_ACCESS_KEY_ID }}
           TEST_ATHENA_AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_ATHENA_AWS_SECRET_ACCESS_KEY }}

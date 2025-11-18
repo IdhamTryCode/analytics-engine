@@ -1,23 +1,23 @@
 # Ibis Server Module
-This module is the API server of Wren Engine. It's built on top of [FastAPI](https://fastapi.tiangolo.com/). It provides several APIs for SQL queries. A SQL query will be planned by [wren-core](../wren-core/), transpiled by [sqlglot](https://github.com/tobymao/sqlglot), and then executed by [ibis](https://github.com/ibis-project/ibis) to query the database.
+This module is the API server of Wren Engine. It's built on top of [FastAPI](https://fastapi.tiangolo.com/). It provides several APIs for SQL queries. A SQL query will be planned by [analytics-core](../analytics-core/), transpiled by [sqlglot](https://github.com/tobymao/sqlglot), and then executed by [ibis](https://github.com/ibis-project/ibis) to query the database.
 
 ## Quick Start
 
 ### Running Ibis Server on Docker
 You can follow the steps below to run the Java engine and ibis.
-> Wren Engine is migrating to [wren-core](../wren-core/). However, we still recommend starting [the Java engine](../wren-core-legacy/) to enable the query fallback mechanism.
+> Wren Engine is migrating to [analytics-core](../analytics-core/). However, we still recommend starting [the Java engine](../analytics-core-legacy/) to enable the query fallback mechanism.
 
 Create `compose.yaml` file and add the following content, edit environment variables if needed (see [Environment Variables](docs/development#environment-variables)).
 ```yaml
 services:
   ibis:
-    image: ghcr.io/canner/wren-engine-ibis:latest
+    image: ghcr.io/canner/analytics-engine-ibis:latest
     ports:
       - "8000:8000"
     environment:
-      - WREN_ENGINE_ENDPOINT=http://java-engine:8080
+      - ANALYTICS_ENGINE_ENDPOINT=http://java-engine:8080
   java-engine:
-    image: ghcr.io/canner/wren-engine:latest
+    image: ghcr.io/canner/analytics-engine:latest
     expose:
       - "8080"
     volumes:
@@ -99,7 +99,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 ### Start with Jupyter Notebook
 Launch a Jupyter notebook server with Wren engine dependencies using Docker:
 ```
-docker run --rm -p 8888:8888 ghcr.io/canner/wren-engine-ibis:latest jupyter
+docker run --rm -p 8888:8888 ghcr.io/canner/analytics-engine-ibis:latest jupyter
 ```
 Explore the demo notebooks to learn how to use the Wren session context:
 ```

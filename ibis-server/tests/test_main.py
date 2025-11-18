@@ -24,7 +24,7 @@ async def test_config(client):
     response = await client.get("/config")
     assert response.status_code == 200
     assert response.json() == {
-        "wren_engine_endpoint": "http://localhost:8080",
+        "analytics_engine_endpoint": "http://localhost:8080",
         "remote_function_list_path": None,
         "remote_white_function_list_path": None,
         "diagnose": False,

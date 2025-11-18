@@ -6,7 +6,7 @@
 
 import argparse
 import os
-import wren_core
+import analytics_core
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description="Find the duplicate function in the function list")
@@ -14,7 +14,7 @@ parser.add_argument("path", help="Path to the csv file")
 
 args = parser.parse_args()
 
-ctx = wren_core.SessionContext()
+ctx = analytics_core.SessionContext()
 functions = ctx.get_available_functions()
 # extract the function names be a set
 function_names = set()

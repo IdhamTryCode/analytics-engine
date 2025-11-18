@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wren_core import (
+from analytics_core import (
     RowLevelAccessControl,
     SessionProperty,
     to_manifest,

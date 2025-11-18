@@ -16,7 +16,7 @@ from app.dependencies import (
 
 
 class QueryCacheImpl:
-    def __init__(self, root: str = "/tmp/wren-engine/"):
+    def __init__(self, root: str = "/tmp/analytics-engine/"):
         self.root = root
 
     def get(

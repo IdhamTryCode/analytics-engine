@@ -8,7 +8,7 @@ Dokumen ini menjelaskan implementasi improvements untuk security dan performance
 
 ### 1. Security Improvements
 
-#### `wren-core/core/src/error.rs`
+#### `analytics-core/core/src/error.rs`
 - Custom error types dengan proper error handling
 - Input validation utilities:
   - `validate_sql()`: Validasi SQL query (max length, basic injection detection)
@@ -17,7 +17,7 @@ Dokumen ini menjelaskan implementasi improvements untuk security dan performance
 
 **Usage:**
 ```rust
-use wren_core::error::{WrenCoreResult, validation};
+use analytics_core::error::{WrenCoreResult, validation};
 
 // Validate SQL before processing
 validation::validate_sql(sql)?;
@@ -28,7 +28,7 @@ validation::validate_mdl_size(mdl_json)?;
 
 ### 2. Performance Improvements
 
-#### `wren-core/core/src/performance.rs`
+#### `analytics-core/core/src/performance.rs`
 - Smart Arc cloning utilities
 - String optimization utilities:
   - `replace_efficient()`: Pre-allocated string replacement
@@ -38,7 +38,7 @@ validation::validate_mdl_size(mdl_json)?;
 
 **Usage:**
 ```rust
-use wren_core::performance::{string_ops, cache};
+use analytics_core::performance::{string_ops, cache};
 
 // Efficient string replacement
 let result = string_ops::replace_efficient(original, pattern, replacement);
@@ -51,16 +51,16 @@ let value = cache.get(&key);
 
 ### 3. Enhanced Benchmark Framework
 
-#### `wren-core/benchmarks/src/util/comparison.rs`
+#### `analytics-core/benchmarks/src/util/comparison.rs`
 - Statistical analysis: mean, median, p95, p99, std_dev
 - Comparison utilities untuk before/after benchmarks
 - Markdown report generation
 
-#### `wren-core/benchmarks/src/util/profiling.rs`
+#### `analytics-core/benchmarks/src/util/profiling.rs`
 - Performance profiler dengan checkpoints
 - Memory tracking utilities
 
-#### `wren-core/benchmarks/src/bin/compare.rs`
+#### `analytics-core/benchmarks/src/bin/compare.rs`
 - CLI tool untuk compare benchmark results
 - Support multiple output formats: JSON, Markdown, Table
 
@@ -70,7 +70,7 @@ let value = cache.get(&key);
 
 ```bash
 # Run baseline benchmark
-cd wren-core/benchmarks
+cd analytics-core/benchmarks
 cargo run --release --bin tpch -- benchmark --all-queries -i 10 -o baseline.json
 
 # Make improvements...
@@ -92,7 +92,7 @@ cargo run --release --bin compare -- \
 
 #### Step 1: Update imports
 ```rust
-use wren_core::error::{WrenCoreResult, validation};
+use analytics_core::error::{WrenCoreResult, validation};
 ```
 
 #### Step 2: Add input validation
@@ -156,13 +156,13 @@ let ctx = apply_wren_on_ctx(
 let replaced = sql.to_string().replace(prefix, "");
 
 // After
-use wren_core::performance::string_ops;
+use analytics_core::performance::string_ops;
 let replaced = string_ops::replace_efficient(&sql, prefix, "");
 ```
 
 #### Step 3: Add caching
 ```rust
-use wren_core::performance::cache;
+use analytics_core::performance::cache;
 
 // Create cache at module level
 static LINEAGE_CACHE: Lazy<cache::Cache<String, Lineage>> = 
@@ -181,8 +181,8 @@ Ok(lineage)
 ## Next Steps
 
 ### Immediate Actions
-1. ✅ Update `wren-core/core/src/lib.rs` to export new modules
-2. ✅ Update `wren-core/core/src/mdl/mod.rs` to use new error types
+1. ✅ Update `analytics-core/core/src/lib.rs` to export new modules
+2. ✅ Update `analytics-core/core/src/mdl/mod.rs` to use new error types
 3. ✅ Replace critical `unwrap()` calls in hot paths
 4. ✅ Add input validation to public APIs
 
@@ -244,19 +244,19 @@ cargo run --release --bin compare -- \
 
 ### Unit Tests
 ```bash
-cd wren-core
+cd analytics-core
 cargo test --lib
 ```
 
 ### Integration Tests
 ```bash
-cd wren-core
+cd analytics-core
 cargo test --test '*'
 ```
 
 ### Benchmark Tests
 ```bash
-cd wren-core/benchmarks
+cd analytics-core/benchmarks
 cargo test
 ```
 

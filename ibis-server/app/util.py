@@ -18,7 +18,7 @@ import pandas as pd
 import psycopg
 import pyarrow as pa
 import trino
-import wren_core
+import analytics_core
 from fastapi import Header
 from loguru import logger
 from opentelemetry import trace
@@ -170,7 +170,7 @@ def append_fallback_context(headers: Header, span: trace.Span) -> Headers:
 
 @tracer.start_as_current_span("pushdown_limit", kind=trace.SpanKind.INTERNAL)
 def pushdown_limit(sql: str, limit: int | None) -> str:
-    ctx = wren_core.SessionContext()
+    ctx = analytics_core.SessionContext()
     return ctx.pushdown_limit(sql, limit)
 
 

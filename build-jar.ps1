@@ -18,8 +18,8 @@ $userPath = [System.Environment]::GetEnvironmentVariable('PATH', 'User')
 $machinePath = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine')
 $env:PATH = "$userPath;$machinePath"
 
-Write-Host "Building JAR file for wren-engine..." -ForegroundColor Cyan
-Set-Location wren-core-legacy
+Write-Host "Building JAR file for analytics-engine..." -ForegroundColor Cyan
+Set-Location analytics-core-legacy
 
 # Check if Java is installed
 $javaCmd = Get-Command java -ErrorAction SilentlyContinue
@@ -89,7 +89,7 @@ if (Test-Path ".\mvnw.cmd") {
     & java "-Dmaven.multiModuleProjectDirectory=$projectBaseDir" "-classpath" "$mavenWrapperJar" "org.apache.maven.wrapper.MavenWrapperMain" "package" "-DskipTests" "-Dcheckstyle.skip=true" "-Dmaven.checkstyle.skip=true" "-Dair.check.skip-checkstyle=true" "-Dair.check.skip-dependency=true" "-pl" "wren-server" "-P" "exec-jar"
 } else {
     Write-Host "Error: Maven wrapper not found!" -ForegroundColor Red
-    Write-Host "Please ensure you're in the wren-core-legacy directory" -ForegroundColor Yellow
+    Write-Host "Please ensure you're in the analytics-core-legacy directory" -ForegroundColor Yellow
     exit 1
 }
 

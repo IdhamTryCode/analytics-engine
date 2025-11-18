@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "maven"
-    directory: "/wren-core-legacy"
+    directory: "/analytics-core-legacy"
     schedule:
       interval: "weekly"
     groups:
@@ -27,7 +27,7 @@ updates:
       - "python"
       - "ibis"
   - package-ecosystem: "pip"
-    directory: "/wren-core-py"
+    directory: "/analytics-core-py"
     schedule:
       interval: "weekly"
     groups:
@@ -39,7 +39,7 @@ updates:
       - "dependencies"
       - "python"
   - package-ecosystem: "cargo"
-    directory: "/wren-core"
+    directory: "/analytics-core"
     schedule:
       interval: "weekly"
     groups:
@@ -52,7 +52,7 @@ updates:
       - "core"
       - "rust"
   - package-ecosystem: "cargo"
-    directory: "/wren-core-base"
+    directory: "/analytics-core-base"
     schedule:
       interval: "weekly"
     groups:

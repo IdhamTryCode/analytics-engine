@@ -1,4 +1,4 @@
-import wren_core
+import analytics_core
 from fastapi import Request
 from starlette.datastructures import Headers
 
@@ -52,6 +52,6 @@ def _filter_headers(header_string: str) -> bool:
 
 def is_backward_compatible(manifest_str: str) -> bool:
     try:
-        return wren_core.is_backward_compatible(manifest_str)
+        return analytics_core.is_backward_compatible(manifest_str)
     except Exception:
         return False

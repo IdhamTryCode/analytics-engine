@@ -3,15 +3,15 @@
 ## Status: Yang Sudah Dilakukan ✅
 
 ### 1. Infrastructure & Tools (DONE)
-- ✅ Created `wren-core/core/src/performance.rs` dengan utilities:
+- ✅ Created `analytics-core/core/src/performance.rs` dengan utilities:
   - Smart Arc cloning trait (basic implementation)
   - String optimization utilities (`replace_efficient`, `with_capacity_for_replace`)
   - Caching utilities (`Cache<K, V>` dengan LRU-like behavior)
 - ✅ Created enhanced benchmark framework:
-  - Comparison tool (`wren-core/benchmarks/src/bin/compare.rs`)
+  - Comparison tool (`analytics-core/benchmarks/src/bin/compare.rs`)
   - Statistical analysis (mean, median, p95, p99, std_dev)
   - Profiling utilities
-- ✅ Exported modules di `wren-core/core/src/lib.rs`
+- ✅ Exported modules di `analytics-core/core/src/lib.rs`
 
 ### 2. Documentation (DONE)
 - ✅ Created `ANALYSIS.md` - Analisa lengkap security & performance issues
@@ -29,16 +29,16 @@
 #### TODO-004: Reduce Unnecessary Arc Clones ✅ COMPLETED
 - [x] **Task**: Replace unnecessary `Arc::clone()` dengan more idiomatic code
 - [x] **Files Updated**:
-  - ✅ `wren-core/core/src/mdl/mod.rs` - 4 optimizations:
+  - ✅ `analytics-core/core/src/mdl/mod.rs` - 4 optimizations:
     - `transform_sql_with_ctx` (line 415-422) - Changed to use `.clone()` method
     - `wren_mdl()` method (line 103-106) - More idiomatic
     - `permission_analyze` (line 477-482) - Optimized properties clone
     - `transform_sql_with_ctx` (line 449-460) - **Cached wren_mdl to avoid duplicate calls** (real optimization)
-  - ✅ `wren-core/core/src/mdl/context.rs` - 3 optimizations:
+  - ✅ `analytics-core/core/src/mdl/context.rs` - 3 optimizations:
     - `apply_wren_on_ctx` (line 101-106) - Changed to use `.clone()` method
     - `register_table_with_mdl` (line 308-315) - Optimized model and analyzed_mdl clones
     - `WrenDataSource::new` (line 348-358) - Optimized analyzed_mdl and column clones
-- [x] **Documentation**: Created `wren-core/core/PERFORMANCE_OPTIMIZATIONS.md`
+- [x] **Documentation**: Created `analytics-core/core/PERFORMANCE_OPTIMIZATIONS.md`
 - [x] **Remaining Work** (Lower Priority - Reviewed):
   - [x] ✅ Review remaining `Arc::clone()` calls di test cases (72 instances) - **Reviewed**: Test cases are lower priority, most clones are necessary for test isolation
   - [x] ✅ Consider using `&Arc<T>` references where ownership transfer is not needed - **Reviewed**: Current implementation requires ownership for async functions and collections, `&Arc<T>` would require signature changes across many functions
@@ -57,18 +57,18 @@
 #### TODO-005: Optimize String Operations ✅ COMPLETED
 - [x] **Task**: Apply string optimization utilities ke hot paths
 - [x] **Files Updated**:
-  - ✅ `wren-core/core/src/mdl/mod.rs` - 2 optimizations:
+  - ✅ `analytics-core/core/src/mdl/mod.rs` - 2 optimizations:
     - String replacement (line 465-472) - Applied `string_ops::replace_efficient()` with early return
     - catalog_schema_prefix building (line 178-185) - Pre-allocated capacity instead of `format!`
-  - ✅ `wren-core/core/src/mdl/dialect/wren_dialect.rs` - 1 optimization:
+  - ✅ `analytics-core/core/src/mdl/dialect/wren_dialect.rs` - 1 optimization:
     - Regex caching (line 30-38, 53-54) - Cached regex pattern using `std::sync::OnceLock`
-  - ✅ `wren-core/core/src/performance.rs` - Enhanced `replace_efficient()` implementation
+  - ✅ `analytics-core/core/src/performance.rs` - Enhanced `replace_efficient()` implementation
 - [x] **Changes**:
   1. ✅ Replaced `sql.to_string().replace()` dengan `string_ops::replace_efficient()` with early return
   2. ✅ Cached compiled regex patterns using `std::sync::OnceLock` (built-in, no external deps)
   3. ✅ Used `String::with_capacity()` untuk pre-allocated strings in catalog_schema_prefix
   4. ✅ Improved `replace_efficient()` with manual replacement loop for better capacity usage
-- [x] **Documentation**: Created `wren-core/core/STRING_OPTIMIZATIONS.md`
+- [x] **Documentation**: Created `analytics-core/core/STRING_OPTIMIZATIONS.md`
 - [x] **Expected Impact**: 
   - 10-15% reduction in string allocation overhead
   - 50-80% improvement for regex compilation (compiled once instead of every call)
@@ -84,7 +84,7 @@
   3. Compiled regex patterns → handled in TODO-005 using `OnceLock`
   4. SQL plan cache → N/A for now (tidak dibutuhkan saat ini)
 - [x] **Implementation Notes**:
-  - Menggunakan `std::sync::OnceLock` + `wren_core::performance::cache::Cache<K, Arc<V>>`
+  - Menggunakan `std::sync::OnceLock` + `analytics_core::performance::cache::Cache<K, Arc<V>>`
   - API: `compute_lineage_cached(&WrenMDL)` dan `compute_analyzed_mdl_cached(manifest, properties, mode)`
 - [x] **Expected Impact**: 30-50% reduction in repeated computations
 - [x] **Time Estimate**: Completed
@@ -117,7 +117,7 @@
 - [ ] **Task**: Run benchmark setelah improvements
 - [ ] **Command**:
   ```bash
-  cd wren-core/benchmarks
+  cd analytics-core/benchmarks
   cargo run --release --bin tpch -- benchmark --all-queries -i 20 -o results/improved.json
   ```
 - [ ] **Expected Output**: `results/improved.json` dengan improved metrics

@@ -7,19 +7,19 @@ from orjson import orjson
 from app.config import get_config
 from app.model.error import ErrorCode, ErrorPhase, WrenError
 
-wren_engine_endpoint = get_config().wren_engine_endpoint
+analytics_engine_endpoint = get_config().analytics_engine_endpoint
 
 
 class JavaEngineConnector:
     def __init__(self, end_point: str | None = None):
-        if end_point is None and wren_engine_endpoint is None:
+        if end_point is None and analytics_engine_endpoint is None:
             logger.warning(
-                "WREN_ENGINE_ENDPOINT is not set. The v2 MDL endpoint and the fallback will not be available."
+                "ANALYTICS_ENGINE_ENDPOINT is not set. The v2 MDL endpoint and the fallback will not be available."
             )
             self.client = None
         else:
             self.client = httpx.AsyncClient(
-                base_url=end_point or wren_engine_endpoint,
+                base_url=end_point or analytics_engine_endpoint,
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -30,7 +30,7 @@ class JavaEngineConnector:
         if self.client is None:
             raise WrenError(
                 ErrorCode.GENERIC_INTERNAL_ERROR,
-                "WREN_ENGINE_ENDPOINT is not set. Cannot call dry_plan without a valid endpoint.",
+                "ANALYTICS_ENGINE_ENDPOINT is not set. Cannot call dry_plan without a valid endpoint.",
                 phase=ErrorPhase.SQL_PLANNING,
             )
 

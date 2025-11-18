@@ -12,10 +12,10 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - Banyak di production code yang bisa menyebabkan crash
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs`: 447, 780, 1413, 1913, 1964, 2040, 2129, 2194, 2701, 2774, 2802, 2876, 3106, 3362, 3439, 3618, 3848, 3863, 3876, 3892, 3903, 3908
-- `wren-core/core/src/mdl/lineage.rs`: 401, 408, 419, 476, 562, 570, 582, 596, 610, 625, 690, 694-710
-- `wren-core/core/src/mdl/utils.rs`: 105, 111, 280, 281, 296, 312, 313, 328, 365, 366, 373, 389, 390, 397
-- `wren-core-py/src/lib.rs`: env_logger initialization tanpa error handling
+- `analytics-core/core/src/mdl/mod.rs`: 447, 780, 1413, 1913, 1964, 2040, 2129, 2194, 2701, 2774, 2802, 2876, 3106, 3362, 3439, 3618, 3848, 3863, 3876, 3892, 3903, 3908
+- `analytics-core/core/src/mdl/lineage.rs`: 401, 408, 419, 476, 562, 570, 582, 596, 610, 625, 690, 694-710
+- `analytics-core/core/src/mdl/utils.rs`: 105, 111, 280, 281, 296, 312, 313, 328, 365, 366, 373, 389, 390, 397
+- `analytics-core-py/src/lib.rs`: env_logger initialization tanpa error handling
 
 **Risiko:**
 - **DoS Attack**: Input yang tidak valid bisa menyebabkan panic dan crash service
@@ -35,8 +35,8 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - No rate limiting atau size limits
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - SQL input langsung diproses
-- `wren-core-py/src/manifest.rs` - JSON parsing tanpa validation
+- `analytics-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - SQL input langsung diproses
+- `analytics-core-py/src/manifest.rs` - JSON parsing tanpa validation
 
 **Risiko:**
 - **SQL Injection**: Meskipun menggunakan DataFusion, input perlu divalidasi
@@ -56,8 +56,8 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - No bounds checking pada beberapa collections
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs`: 492 instances `Arc::clone()`
-- `wren-core/core/src/mdl/lineage.rs`: Complex graph structures
+- `analytics-core/core/src/mdl/mod.rs`: 492 instances `Arc::clone()`
+- `analytics-core/core/src/mdl/lineage.rs`: Complex graph structures
 
 **Risiko:**
 - **Memory Leaks**: Circular references bisa menyebabkan memory tidak ter-release
@@ -75,7 +75,7 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - No dependency audit tools configured
 
 **Lokasi:**
-- `wren-core/Cargo.toml`: `datafusion = { git = "https://github.com/Canner/datafusion.git" }`
+- `analytics-core/Cargo.toml`: `datafusion = { git = "https://github.com/Canner/datafusion.git" }`
 
 **Rekomendasi:**
 1. Pin dependencies ke specific versions
@@ -92,7 +92,7 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - String cloning di hot paths
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs`: Line 417, 427, 477, 606, 648, 681, 713, 724, 758, 802, 813, 877, 891, 904, 947, 963, 1006, 1017, 1029, 1079, 1114, 1134, 1174, 1185, 1196, 1257, 1268, 1288, 1300, 1302, 1321, 1323, 1333, 1335, 1348, 1350, 1392, 1422, 1441, 1488, 1503, 1517, 1532, 1566, 1611, 1627, 1641, 1665, 1732, 1764, 1802, 1837, 1872, 1923, 1974, 2017, 2023, 2083, 2089, 2096, 2106, 2116, 2163, 2173, 2181, 2234, 2239, 2270, 2275, 2312, 2322, 2327, 2368, 2378, 2383, 2450, 2456, 2538, 2548, 2555, 2605, 2617, 2651, 2657, 2687, 2688, 2694, 2741, 2742, 2748, 2757, 2758, 2762, 2767, 2782, 2783, 2788, 2856, 2857, 2862, 2911, 2912, 2918, 2956, 2957, 2963, 2972, 2973, 2977, 2984, 2985, 2989, 3021, 3022, 3026, 3066, 3067, 3073, 3082, 3083
+- `analytics-core/core/src/mdl/mod.rs`: Line 417, 427, 477, 606, 648, 681, 713, 724, 758, 802, 813, 877, 891, 904, 947, 963, 1006, 1017, 1029, 1079, 1114, 1134, 1174, 1185, 1196, 1257, 1268, 1288, 1300, 1302, 1321, 1323, 1333, 1335, 1348, 1350, 1392, 1422, 1441, 1488, 1503, 1517, 1532, 1566, 1611, 1627, 1641, 1665, 1732, 1764, 1802, 1837, 1872, 1923, 1974, 2017, 2023, 2083, 2089, 2096, 2106, 2116, 2163, 2173, 2181, 2234, 2239, 2270, 2275, 2312, 2322, 2327, 2368, 2378, 2383, 2450, 2456, 2538, 2548, 2555, 2605, 2617, 2651, 2657, 2687, 2688, 2694, 2741, 2742, 2748, 2757, 2758, 2762, 2767, 2782, 2783, 2788, 2856, 2857, 2862, 2911, 2912, 2918, 2956, 2957, 2963, 2972, 2973, 2977, 2984, 2985, 2989, 3021, 3022, 3026, 3066, 3067, 3073, 3082, 3083
 
 **Impact:**
 - Memory overhead: ~30-40% unnecessary allocations
@@ -112,8 +112,8 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - Sequential processing instead of parallel
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - Sequential processing
-- `wren-core/core/src/mdl/mod.rs::permission_analyze()` - Duplicate work
+- `analytics-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - Sequential processing
+- `analytics-core/core/src/mdl/mod.rs::permission_analyze()` - Duplicate work
 
 **Impact:**
 - Latency: Sequential processing increases response time
@@ -132,8 +132,8 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - No string interning
 
 **Lokasi:**
-- `wren-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - Line 454-456: Multiple string operations
-- `wren-core/core/src/mdl/dialect/wren_dialect.rs` - Regex compilation setiap kali
+- `analytics-core/core/src/mdl/mod.rs::transform_sql_with_ctx()` - Line 454-456: Multiple string operations
+- `analytics-core/core/src/mdl/dialect/wren_dialect.rs` - Regex compilation setiap kali
 
 **Impact:**
 - Memory: Frequent allocations/deallocations
@@ -152,7 +152,7 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 - Recursive algorithms yang bisa stack overflow
 
 **Lokasi:**
-- `wren-core/core/src/mdl/lineage.rs` - Complex graph traversal
+- `analytics-core/core/src/mdl/lineage.rs` - Complex graph traversal
 
 **Impact:**
 - CPU: Graph operations are expensive
@@ -189,7 +189,7 @@ Analisa menyeluruh terhadap codebase Wren Engine dengan fokus pada bagian Rust u
 ## 4. Benchmark Strategy
 
 ### Current State
-- Existing benchmark framework di `wren-core/benchmarks/`
+- Existing benchmark framework di `analytics-core/benchmarks/`
 - TPC-H queries support
 - Basic comparison tool
 

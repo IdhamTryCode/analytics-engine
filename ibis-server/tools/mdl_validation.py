@@ -13,7 +13,7 @@ import base64
 import json
 
 from loguru import logger
-from wren_core import SessionContext
+from analytics_core import SessionContext
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description="Validate the MDL file")

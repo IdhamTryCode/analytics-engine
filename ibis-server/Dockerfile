@@ -28,9 +28,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 RUN pip install poetry==1.8.3
 
-COPY --from=wren-core-py . /wren-core-py
-COPY --from=wren-core . /wren-core
-COPY --from=wren-core-base . /wren-core-base
+COPY --from=analytics-core-py . /analytics-core-py
+COPY --from=analytics-core . /analytics-core
+COPY --from=analytics-core-base . /analytics-core-base
 
 WORKDIR /app
 COPY . .
@@ -69,7 +69,7 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY app ./app/
 COPY resources ./resources/
 COPY notebooks ./notebooks/
-COPY wren/ ./wren/
+COPY analytics/ ./analytics/
 
 # Copy pyproject.toml and poetry.lock for poetry to work
 COPY pyproject.toml poetry.lock ./

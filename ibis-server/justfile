@@ -2,9 +2,9 @@ default:
     @just --list --unsorted
 
 build-core:
-    cd ../wren-core-py && just install && just build
+    cd ../analytics-core-py && just install && just build
 
-core-wheel-path := "../wren-core-py/target/wheels/wren_core_py-*.whl"
+core-wheel-path := "../analytics-core-py/target/wheels/analytics_core_py-*.whl"
 
 install-core:
     just build-core
@@ -42,7 +42,7 @@ run-trace-otlp:
         --traces_exporter otlp \
         --exporter_otlp_endpoint http://localhost:4318 \
         --exporter_otlp_protocol http/protobuf \
-        --service_name wren-engine \
+        --service_name analytics-engine \
         fastapi run --port {{ port }}
 dev:
     poetry run python -m fastapi dev --port {{ port }}
@@ -54,13 +54,13 @@ test MARKER:
 test-verbose MARKER:
     poetry run pytest -s -v -m '{{ MARKER }}'
 
-image-name := "ghcr.io/canner/wren-engine-ibis:latest"
+image-name := "ghcr.io/canner/analytics-engine-ibis:latest"
 
 docker-build:
     docker buildx build -t {{ image-name }} -f Dockerfile \
-        --build-context wren-core-py=../wren-core-py \
-        --build-context wren-core=../wren-core \
-        --build-context wren-core-base=../wren-core-base \
+        --build-context analytics-core-py=../analytics-core-py \
+        --build-context analytics-core=../analytics-core \
+        --build-context analytics-core-base=../analytics-core-base \
         .
 
 docker-run:

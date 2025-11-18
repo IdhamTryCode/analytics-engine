@@ -5,7 +5,7 @@
 ### 1. Run Baseline Benchmark (Before Improvements)
 
 ```bash
-cd wren-core/benchmarks
+cd analytics-core/benchmarks
 
 # Run all TPC-H queries with 20 iterations
 cargo run --release --bin tpch -- benchmark --all-queries -i 20 -o results/baseline.json
@@ -92,7 +92,7 @@ Overall: -5.23% change (faster)
 
 ### Custom Benchmark Queries
 
-Create custom benchmark queries in `wren-core/benchmarks/src/wren/`:
+Create custom benchmark queries in `analytics-core/benchmarks/src/wren/`:
 
 ```rust
 // src/wren/custom.rs
@@ -133,7 +133,7 @@ name: Benchmark
 on:
   pull_request:
     paths:
-      - 'wren-core/**'
+      - 'analytics-core/**'
 
 jobs:
   benchmark:
@@ -142,15 +142,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run baseline
         run: |
-          cd wren-core/benchmarks
+          cd analytics-core/benchmarks
           cargo run --release --bin tpch -- benchmark --all-queries -i 10 -o baseline.json
       - name: Run comparison
         run: |
-          cd wren-core/benchmarks
+          cd analytics-core/benchmarks
           cargo run --release --bin tpch -- benchmark --all-queries -i 10 -o comparison.json
       - name: Compare
         run: |
-          cd wren-core/benchmarks
+          cd analytics-core/benchmarks
           cargo run --release --bin compare -- \
             --baseline baseline.json \
             --comparison comparison.json \
@@ -160,7 +160,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: benchmark-results
-          path: wren-core/benchmarks/comparison.md
+          path: analytics-core/benchmarks/comparison.md
 ```
 
 ## Troubleshooting

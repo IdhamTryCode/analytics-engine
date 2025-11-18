@@ -50,13 +50,13 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     printf "[global]\nretries = 10\ntimeout = 600\nindex-url = https://pypi.org/simple\n" > /etc/pip/pip.conf
 RUN poetry config installer.max-workers 1
 
-# Copy wren-core dependencies from parent directory (build context is repo root)
-COPY wren-core-py /wren-core-py
-COPY wren-core /wren-core
-COPY wren-core-base /wren-core-base
+# Copy analytics-core dependencies from parent directory (build context is repo root)
+COPY analytics-core-py /analytics-core-py
+COPY analytics-core /analytics-core
+COPY analytics-core-base /analytics-core-base
 
 # Refresh Rust dependencies lockfile to avoid maturin --locked failures (with retries/backoff)
-RUN set -e; cd /wren-core-py; \
+RUN set -e; cd /analytics-core-py; \
     for i in 1 2 3 4 5; do \
       cargo update -w && break; \
       echo "cargo update failed ($i/5). Retrying in 20s..." && sleep 20; \
@@ -104,7 +104,7 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY ibis-server/app ./app/
 COPY ibis-server/resources ./resources/
 COPY ibis-server/notebooks ./notebooks/
-COPY ibis-server/wren/ ./wren/
+COPY ibis-server/analytics/ ./analytics/
 
 # Copy pyproject.toml and poetry.lock for poetry to work
 COPY ibis-server/pyproject.toml ibis-server/poetry.lock ./
