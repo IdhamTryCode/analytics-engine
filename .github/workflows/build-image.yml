@@ -1,4 +1,9 @@
-name: Build image
+name: Build and Push Docker Images to GHCR
+
+# This workflow builds and pushes two Docker images to GitHub Container Registry (ghcr.io):
+# 1. analytics-engine: Java-based SQL planning engine (analytics-core-legacy)
+# 2. analytics-engine-ibis: Python-based ibis server with Rust core bindings
+
 permissions:
   contents: write
   packages: write
@@ -8,13 +13,20 @@ on:
   push:
     branches:
       - main
+      - renaming-whole-project  # Allow building from this branch for testing
   workflow_dispatch:
     inputs:
       docker_image_tag_name:
         type: string
-        description: Docker image tag name (Optional)
+        description: 'Docker image tag name (Optional)'
+      branch:
+        type: string
+        description: 'Branch to build from (default: current branch)'
+        default: ''
+        required: false
 
 env:
+  # GitHub Container Registry image names
   ENGINE_IMAGE: ghcr.io/canner/analytics-engine
   IBIS_IMAGE: ghcr.io/canner/analytics-engine-ibis
 
@@ -27,21 +39,32 @@ jobs:
         id: prepare_tag
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
+            # For push events, use commit SHA and branch name
             echo "type=sha" > tags.txt
-            echo "type=schedule" >> tags.txt
+            echo "type=ref,event=branch" >> tags.txt
+            # Also add latest tag for main branch only
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              echo "type=raw,value=latest" >> tags.txt
+            fi
           fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "${{ github.event.inputs.docker_image_tag_name }}" ]; then
               tag_name=${{ github.event.inputs.docker_image_tag_name }}
             else
-              tag_name=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9]/-/g')-$(git log -1 --pretty=%h)
+              # Use branch name and commit SHA
+              branch_name="${{ github.event.inputs.branch }}"
+              if [ -z "$branch_name" ]; then
+                branch_name="${{ github.ref_name }}"
+              fi
+              tag_name=$(echo "$branch_name" | sed 's/[^a-zA-Z0-9]/-/g')-$(git log -1 --pretty=%h)
             fi
             echo "type=raw,value=$tag_name" > tags.txt
           fi
           echo "tags=$(cat tags.txt)" >> $GITHUB_OUTPUT
     outputs:
       tags: ${{ steps.prepare_tag.outputs.tags }}
-  build-image:
+  # Build and push Java Engine (analytics-engine)
+  build-java-engine:
     needs: prepare-tag
     runs-on: ubuntu-latest
     steps:
@@ -52,10 +75,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
-      - name: Build
+      - name: Build Java Engine JAR
         working-directory: analytics-core-legacy
         run: |
-          ./mvnw clean install -B -DskipTests -P exec-jar
+          ./mvnw clean install -B -DskipTests -Dcheckstyle.skip=true -Dair.check.skip-dependency=true -P exec-jar
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
@@ -80,15 +103,20 @@ jobs:
           ANALYTICS_VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
           cp ./analytics-server/target/analytics-server-${ANALYTICS_VERSION}-executable.jar ./docker
           echo "ANALYTICS_VERSION=$ANALYTICS_VERSION" >> "$GITHUB_OUTPUT"
-      - name: Build and push
+      - name: Build and push Java Engine image
         uses: docker/build-push-action@v5
         with:
           context: ./analytics-core-legacy/docker
+          file: ./analytics-core-legacy/docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: |
+          build-args:
             ANALYTICS_VERSION=${{ steps.prepare.outputs.ANALYTICS_VERSION }}
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  # Build and push Ibis Server (analytics-engine-ibis)
+  # Uses multi-stage build with separate jobs for each platform, then merges manifests
   build-ibis-image:
     needs: prepare-tag
     strategy:
@@ -97,14 +125,17 @@ jobs:
         arch:
           - runner: ubuntu-latest
             platform: linux/amd64
-          - runner: linux_arm64_runner
+          - runner: ubuntu-latest
             platform: linux/arm64
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - name: Prepare platform
+        id: platform
         run: |
-          platform=${{ matrix.arch.platform }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+          platform="${{ matrix.arch.platform }}"
+          PLATFORM_PAIR="${platform//\//-}"
+          echo "PLATFORM_PAIR=${PLATFORM_PAIR}" >> $GITHUB_ENV
+          echo "platform_pair=${PLATFORM_PAIR}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - name: Docker meta
         id: meta
@@ -119,6 +150,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Set up QEMU (for ARM64)
+        if: matrix.arch.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -126,6 +160,7 @@ jobs:
           platforms: ${{ matrix.arch.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           context: ./ibis-server
+          file: ./ibis-server/Dockerfile
           build-contexts: |
             analytics-core-py=./analytics-core-py
             analytics-core=./analytics-core
@@ -139,11 +174,12 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}
+          name: digests-${{ steps.platform.outputs.platform_pair }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
-  merge:
+  # Merge multi-platform manifests for ibis-server image
+  merge-ibis-manifests:
     runs-on: ubuntu-latest
     needs: [ prepare-tag, build-ibis-image ]
     steps:
