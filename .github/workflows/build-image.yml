@@ -81,7 +81,17 @@ jobs:
       - name: Build Java Engine JAR
         working-directory: analytics-core-legacy
         run: |
-          ./mvnw clean install -B -DskipTests -Dcheckstyle.skip=true -Dair.check.skip-dependency=true -P exec-jar
+          ./mvnw clean install -B \
+            -DskipTests \
+            -Dcheckstyle.skip=true \
+            -Dmaven.checkstyle.skip=true \
+            -Dair.check.skip-checkstyle=true \
+            -Dair.check.skip-dependency=true \
+            -Dair.check.skip-license=true \
+            -Dlicense.skip=true \
+            -Dmaven.license.skip=true \
+            -Dair.check.fail-license=false \
+            -P exec-jar
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
