@@ -75,6 +75,9 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
+      - name: Make mvnw executable
+        working-directory: analytics-core-legacy
+        run: chmod +x ./mvnw
       - name: Build Java Engine JAR
         working-directory: analytics-core-legacy
         run: |
@@ -100,6 +103,7 @@ jobs:
         working-directory: analytics-core-legacy
         id: prepare
         run: |
+          # mvnw should already be executable from previous step
           ANALYTICS_VERSION=$(./mvnw --quiet help:evaluate -Dexpression=project.version -DforceStdout)
           cp ./analytics-server/target/analytics-server-${ANALYTICS_VERSION}-executable.jar ./docker
           echo "ANALYTICS_VERSION=$ANALYTICS_VERSION" >> "$GITHUB_OUTPUT"
