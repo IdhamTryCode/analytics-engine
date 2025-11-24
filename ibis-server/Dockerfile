@@ -32,9 +32,36 @@ COPY --from=analytics-core-py . /analytics-core-py
 COPY --from=analytics-core . /analytics-core
 COPY --from=analytics-core-base . /analytics-core-base
 
+# Install git for Cargo git-fetch and ensure certs present
+RUN apt-get update && apt-get -y install git ca-certificates && update-ca-certificates
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
+    && git config --global url."https://github.com/".insteadOf "git@github.com:"
+# Harden git/cargo for slow or flaky networks
+RUN git config --global http.lowSpeedLimit 0 \
+    && git config --global http.lowSpeedTime 600 \
+    && git config --global http.postBuffer 524288000 \
+    && git config --global http.followRedirects true
+ENV GIT_HTTP_LOW_SPEED_LIMIT=0 \
+    GIT_HTTP_LOW_SPEED_TIME=600 \
+    CARGO_HTTP_TIMEOUT=600 \
+    CARGO_NET_RETRY=5 \
+    CARGO_HTTP_MULTIPLEXING=false \
+    CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
+# Refresh Rust dependencies lockfile to avoid maturin --locked failures (with retries/backoff)
+RUN set -e; cd /analytics-core-py; \
+    for i in 1 2 3 4 5; do \
+      cargo update -w && break; \
+      echo "cargo update failed ($i/5). Retrying in 20s..." && sleep 20; \
+    done
+
 WORKDIR /app
 COPY . .
-RUN just install --without dev
+RUN set -e; for i in 1 2 3 4 5; do \
+      just install --without dev && break; \
+      echo "just install failed ($i/5). Retrying in 20s..." && sleep 20; \
+    done
 
 
 FROM python:3.11-slim-bookworm AS runtime
