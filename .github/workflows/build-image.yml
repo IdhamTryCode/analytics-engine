@@ -39,13 +39,11 @@ jobs:
         id: prepare_tag
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            # For push events, use commit SHA (short format without 'sha-' prefix)
+            # Always push with 'latest' tag first to create package if it doesn't exist
+            # Then add commit SHA tag
             COMMIT_SHA=$(git rev-parse --short HEAD)
-            echo "type=raw,value=${COMMIT_SHA}" > tags.txt
-            # Also add latest tag for main branch only
-            if [ "${{ github.ref_name }}" = "main" ]; then
-              echo "type=raw,value=latest" >> tags.txt
-            fi
+            echo "type=raw,value=latest" > tags.txt
+            echo "type=raw,value=${COMMIT_SHA}" >> tags.txt
           fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "${{ github.event.inputs.docker_image_tag_name }}" ]; then
@@ -97,8 +95,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.ENGINE_IMAGE }}
-          tags: |
-            ${{ needs.prepare-tag.outputs.tags }}
+          tags: ${{ needs.prepare-tag.outputs.tags }}
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
