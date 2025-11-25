@@ -54,7 +54,7 @@ test MARKER:
 test-verbose MARKER:
     poetry run pytest -s -v -m '{{ MARKER }}'
 
-image-name := "ghcr.io/canner/analytics-engine-ibis:latest"
+image-name := "ghcr.io/idhamtrycode/analytics-engine-ibis:latest"
 
 docker-build:
     docker buildx build -t {{ image-name }} -f Dockerfile \

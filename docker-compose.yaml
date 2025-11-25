@@ -6,7 +6,7 @@ services:
       dockerfile: ibis-server/Dockerfile.local
       network: host
     # Uncomment below to use pre-built image from registry
-    # image: ghcr.io/canner/analytics-engine-ibis:latest
+    # image: ghcr.io/idhamtrycode/analytics-engine-ibis:latest
     image: analytics-engine-ibis:local
     ports:
       - "8000:8000"
@@ -30,7 +30,7 @@ services:
         ANALYTICS_VERSION: ${ANALYTICS_VERSION:-0.21.3-SNAPSHOT}
       # JAR file should be at: analytics-server/target/analytics-server-${ANALYTICS_VERSION}-executable.jar
     # Uncomment below to use pre-built image from registry
-    # image: ghcr.io/canner/analytics-engine:latest
+    # image: ghcr.io/idhamtrycode/analytics-engine:latest
     image: analytics-engine:local
     ports:
       - "8080:8080"

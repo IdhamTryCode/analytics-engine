@@ -27,8 +27,8 @@ on:
 
 env:
   # GitHub Container Registry image names
-  ENGINE_IMAGE: ghcr.io/canner/analytics-engine
-  IBIS_IMAGE: ghcr.io/canner/analytics-engine-ibis
+  ENGINE_IMAGE: ghcr.io/idhamtrycode/analytics-engine
+  IBIS_IMAGE: ghcr.io/idhamtrycode/analytics-engine-ibis
 
 jobs:
   prepare-tag:

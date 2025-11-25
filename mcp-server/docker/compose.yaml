@@ -1,6 +1,6 @@
 services:
   ibis-server:
-    image: ghcr.io/canner/analytics-engine-ibis:latest
+    image: ghcr.io/idhamtrycode/analytics-engine-ibis:latest
     ports:
       - "8000:8000"
     environment:
@@ -8,7 +8,7 @@ services:
     volumes:
       - ./../etc:/usr/src/app/etc
   java-engine:
-    image: ghcr.io/canner/analytics-engine:latest
+    image: ghcr.io/idhamtrycode/analytics-engine:latest
     ports:
       - "8080:8080"
     volumes:
@@ -21,4 +21,3 @@ services:
     environment:
       MAX_HEAP_SIZE: 819m
       MIN_HEAP_SIZE: 819m
-      
