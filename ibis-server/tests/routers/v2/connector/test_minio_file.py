@@ -7,7 +7,7 @@ from testcontainers.minio import MinioContainer
 
 pytestmark = pytest.mark.minio_file
 
-bucket = "wren-test"
+bucket = "analytics-test"
 
 base_url = "/v2/connector/minio_file"
 manifest = {

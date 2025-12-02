@@ -6,7 +6,7 @@ from app.model.metadata.dto import (
     Column,
     Constraint,
     ConstraintType,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -16,36 +16,36 @@ from app.model.metadata.metadata import Metadata
 # Reference: https://learn.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql?view=sql-server-ver15#exact-numerics
 MSSQL_TYPE_MAPPING = {
     # String Types
-    "char": RustWrenEngineColumnType.CHAR,
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "text": RustWrenEngineColumnType.TEXT,
-    "nchar": RustWrenEngineColumnType.CHAR,
-    "nvarchar": RustWrenEngineColumnType.VARCHAR,
-    "ntext": RustWrenEngineColumnType.TEXT,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "text": RustAnalyticsEngineColumnType.TEXT,
+    "nchar": RustAnalyticsEngineColumnType.CHAR,
+    "nvarchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "ntext": RustAnalyticsEngineColumnType.TEXT,
     # Numeric Types
-    "bit": RustWrenEngineColumnType.TINYINT,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "bigint": RustWrenEngineColumnType.BIGINT,
+    "bit": RustAnalyticsEngineColumnType.TINYINT,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
     # Boolean
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Decimal
-    "float": RustWrenEngineColumnType.FLOAT8,
-    "real": RustWrenEngineColumnType.FLOAT8,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "numeric": RustWrenEngineColumnType.NUMERIC,
-    "money": RustWrenEngineColumnType.DECIMAL,
-    "smallmoney": RustWrenEngineColumnType.DECIMAL,
+    "float": RustAnalyticsEngineColumnType.FLOAT8,
+    "real": RustAnalyticsEngineColumnType.FLOAT8,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "numeric": RustAnalyticsEngineColumnType.NUMERIC,
+    "money": RustAnalyticsEngineColumnType.DECIMAL,
+    "smallmoney": RustAnalyticsEngineColumnType.DECIMAL,
     # Date and Time Types
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
-    "datetime2": RustWrenEngineColumnType.TIMESTAMP,
-    "smalldatetime": RustWrenEngineColumnType.TIMESTAMP,
-    "time": RustWrenEngineColumnType.INTERVAL,
-    "datetimeoffset": RustWrenEngineColumnType.TIMESTAMPTZ,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "datetime2": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "smalldatetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "time": RustAnalyticsEngineColumnType.INTERVAL,
+    "datetimeoffset": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
     # JSON Type (Note: MSSQL supports JSON natively as a string type)
-    "json": RustWrenEngineColumnType.JSON,
+    "json": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -210,24 +210,24 @@ class MSSQLMetadata(Metadata):
     ):
         return f"{table_name}_{column_name}_{referenced_table_name}_{referenced_column_name}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform MSSQL data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform MSSQL data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The MSSQL data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Convert to lowercase for comparison
         normalized_type = data_type.lower()
 
         # Use the module-level mapping table
         mapped_type = MSSQL_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown MSSQL data type: {data_type}")
 
         return mapped_type

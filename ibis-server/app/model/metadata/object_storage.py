@@ -12,10 +12,10 @@ from app.model import (
     S3FileConnectionInfo,
 )
 from app.model.connector import DuckDBConnector
-from app.model.error import ErrorCode, ErrorPhase, WrenError
+from app.model.error import ErrorCode, ErrorPhase, AnalyticsError
 from app.model.metadata.dto import (
     Column,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -23,31 +23,31 @@ from app.model.metadata.metadata import Metadata
 from app.model.utils import init_duckdb_gcs, init_duckdb_minio, init_duckdb_s3
 
 DUCKDB_TYPE_MAPPING = {
-    "bigint": RustWrenEngineColumnType.INT64,
-    "bit": RustWrenEngineColumnType.INT2,
-    "blob": RustWrenEngineColumnType.BYTES,
-    "boolean": RustWrenEngineColumnType.BOOL,
-    "date": RustWrenEngineColumnType.DATE,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "float": RustWrenEngineColumnType.FLOAT,
-    "integer": RustWrenEngineColumnType.INT,
-    # TODO: Wren engine does not support HUGEINT. Map to INT64 for now.
-    "hugeint": RustWrenEngineColumnType.INT64,
-    "interval": RustWrenEngineColumnType.INTERVAL,
-    "json": RustWrenEngineColumnType.JSON,
-    "smallint": RustWrenEngineColumnType.INT2,
-    "time": RustWrenEngineColumnType.TIME,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp with time zone": RustWrenEngineColumnType.TIMESTAMPTZ,
-    "tinyint": RustWrenEngineColumnType.INT2,
-    "ubigint": RustWrenEngineColumnType.INT64,
-    # TODO: Wren engine does not support UHUGEINT. Map to INT64 for now.
-    "uhugeint": RustWrenEngineColumnType.INT64,
-    "uinteger": RustWrenEngineColumnType.INT,
-    "usmallint": RustWrenEngineColumnType.INT2,
-    "utinyint": RustWrenEngineColumnType.INT2,
-    "uuid": RustWrenEngineColumnType.UUID,
-    "varchar": RustWrenEngineColumnType.STRING,
+    "bigint": RustAnalyticsEngineColumnType.INT64,
+    "bit": RustAnalyticsEngineColumnType.INT2,
+    "blob": RustAnalyticsEngineColumnType.BYTES,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "float": RustAnalyticsEngineColumnType.FLOAT,
+    "integer": RustAnalyticsEngineColumnType.INT,
+    # TODO: Analytics engine does not support HUGEINT. Map to INT64 for now.
+    "hugeint": RustAnalyticsEngineColumnType.INT64,
+    "interval": RustAnalyticsEngineColumnType.INTERVAL,
+    "json": RustAnalyticsEngineColumnType.JSON,
+    "smallint": RustAnalyticsEngineColumnType.INT2,
+    "time": RustAnalyticsEngineColumnType.TIME,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp with time zone": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
+    "tinyint": RustAnalyticsEngineColumnType.INT2,
+    "ubigint": RustAnalyticsEngineColumnType.INT64,
+    # TODO: Analytics engine does not support UHUGEINT. Map to INT64 for now.
+    "uhugeint": RustAnalyticsEngineColumnType.INT64,
+    "uinteger": RustAnalyticsEngineColumnType.INT,
+    "usmallint": RustAnalyticsEngineColumnType.INT2,
+    "utinyint": RustAnalyticsEngineColumnType.INT2,
+    "uuid": RustAnalyticsEngineColumnType.UUID,
+    "varchar": RustAnalyticsEngineColumnType.STRING,
 }
 
 
@@ -109,7 +109,7 @@ class ObjectStorageMetadata(Metadata):
                     )
                     unique_tables[table_name].columns = columns
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR,
                 f"Failed to list files: {e!s}",
                 phase=ErrorPhase.METADATA_FETCHING,
@@ -148,34 +148,34 @@ class ObjectStorageMetadata(Metadata):
                 f"Unsupported format: {self.connection_info.format}"
             )
 
-    def _to_column_type(self, col_type: str) -> RustWrenEngineColumnType:
-        """Transform DuckDB data type to RustWrenEngineColumnType.
+    def _to_column_type(self, col_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform DuckDB data type to RustAnalyticsEngineColumnType.
 
         Args:
             col_type: The DuckDB data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         if col_type.startswith("DECIMAL"):
-            return RustWrenEngineColumnType.DECIMAL
+            return RustAnalyticsEngineColumnType.DECIMAL
 
         # TODO: support struct
         if col_type.startswith("STRUCT"):
-            return RustWrenEngineColumnType.UNKNOWN
+            return RustAnalyticsEngineColumnType.UNKNOWN
 
         # TODO: support array
         if col_type.endswith("[]"):
-            return RustWrenEngineColumnType.UNKNOWN
+            return RustAnalyticsEngineColumnType.UNKNOWN
         # Convert to lowercase for comparison
         normalized_type = col_type.lower()
 
         # Use the module-level mapping table
         mapped_type = DUCKDB_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown DuckDB data type: {col_type}")
 
         return mapped_type
@@ -365,9 +365,9 @@ class DuckDBMetadata(ObjectStorageMetadata):
     def get_version(self):
         df: pa.Table = self.connection.query("SELECT version()")
         if df is None:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.GENERIC_USER_ERROR, "Failed to get DuckDB version"
             )
         if df.num_rows == 0:
-            raise WrenError(ErrorCode.GENERIC_USER_ERROR, "DuckDB version is empty")
+            raise AnalyticsError(ErrorCode.GENERIC_USER_ERROR, "DuckDB version is empty")
         return df.column(0).to_pylist()[0]

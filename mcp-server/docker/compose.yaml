@@ -1,14 +1,14 @@
 services:
   ibis-server:
-    image: ghcr.io/canner/wren-engine-ibis:latest
+    image: ghcr.io/idhamtrycode/analytics-engine-ibis:latest
     ports:
       - "8000:8000"
     environment:
-      WREN_ENGINE_ENDPOINT: http://java-engine:8080
+      ANALYTICS_ENGINE_ENDPOINT: http://java-engine:8080
     volumes:
       - ./../etc:/usr/src/app/etc
   java-engine:
-    image: ghcr.io/canner/wren-engine:latest
+    image: ghcr.io/idhamtrycode/analytics-engine:latest
     ports:
       - "8080:8080"
     volumes:
@@ -21,4 +21,3 @@ services:
     environment:
       MAX_HEAP_SIZE: 819m
       MIN_HEAP_SIZE: 819m
-      

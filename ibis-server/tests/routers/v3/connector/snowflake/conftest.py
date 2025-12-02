@@ -37,10 +37,10 @@ def init_snowflake():
     try:
         cs = conn.cursor()
         try:
-            cs.execute("USE WREN")
+            cs.execute("USE ANALYTICS")
         except Exception:
-            cs.execute("CREATE DATABASE IF NOT EXISTS WREN")
-            cs.execute("USE WREN")
+            cs.execute("CREATE DATABASE IF NOT EXISTS ANALYTICS")
+            cs.execute("USE ANALYTICS")
         try:
             cs.execute("USE SCHEMA PUBLIC")
         except Exception:
@@ -116,7 +116,7 @@ def snowflake_connection_info() -> dict[str, str]:
     return {
         "user": os.getenv("SNOWFLAKE_USER"),
         "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-        "database": "WREN",
+        "database": "ANALYTICS",
         "schema": "PUBLIC",
         "warehouse": "COMPUTE_WH",
         "private_key": os.getenv("SNOWFLAKE_PRIVATE_KEY"),

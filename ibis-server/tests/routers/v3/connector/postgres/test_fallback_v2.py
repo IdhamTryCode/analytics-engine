@@ -3,12 +3,12 @@ import base64
 import orjson
 import pytest
 
-from app.dependencies import X_WREN_FALLBACK_DISABLE, X_WREN_VARIABLE_PREFIX
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE, X_ANALYTICS_VARIABLE_PREFIX
 from tests.routers.v3.connector.postgres.conftest import base_url
 
 # It's not a valid manifest for v3. We expect the query to fail and fallback to v2.
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
@@ -53,7 +53,7 @@ async def test_query(client, manifest_str, connection_info):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -102,7 +102,7 @@ async def test_query_with_cache(client, manifest_str, connection_info):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response3.status_code == 422
@@ -144,7 +144,7 @@ async def test_query_with_cache_override(client, manifest_str, connection_info):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     # Currently fails with 422 because we include fallback header to cache key
@@ -170,7 +170,7 @@ async def test_query_with_connection_url(client, manifest_str, connection_url):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -218,7 +218,7 @@ async def test_query_with_connection_url_and_cache_enable(
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     # Currently fails with 422 because we include fallback header to cache key
@@ -263,7 +263,7 @@ async def test_query_with_connection_url_and_cache_override(
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     # Currently fails with 422 because we include fallback header to cache key
@@ -291,7 +291,7 @@ async def test_dry_run(client, manifest_str, connection_info):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -315,7 +315,7 @@ async def test_dry_plan(client, manifest_str):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -339,7 +339,7 @@ async def test_dry_plan_for_data_source(client, manifest_str):
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -364,7 +364,7 @@ async def test_validate(client, manifest_str, connection_info):
             "parameters": {"modelName": "orders", "columnName": "orderkey"},
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 422
@@ -378,12 +378,12 @@ async def test_query_rlac(client, manifest_str, connection_info):
             "manifestStr": manifest_str,
             "sql": "SELECT orderkey FROM orders LIMIT 1",
         },
-        headers={X_WREN_VARIABLE_PREFIX + "session_user": "1"},
+        headers={X_ANALYTICS_VARIABLE_PREFIX + "session_user": "1"},
     )
     assert response.status_code == 200
 
     manifest_rlac = {
-        "catalog": "wren",
+        "catalog": "analytics",
         "schema": "public",
         "models": [
             {
@@ -425,7 +425,7 @@ async def test_query_rlac(client, manifest_str, connection_info):
     assert response.status_code == 422
 
     manifest_clac = {
-        "catalog": "wren",
+        "catalog": "analytics",
         "schema": "public",
         "models": [
             {

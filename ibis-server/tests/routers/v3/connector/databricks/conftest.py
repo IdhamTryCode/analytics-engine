@@ -18,7 +18,7 @@ def pytest_collection_modifyitems(items):
 
 @pytest.fixture(scope="module", autouse=True)
 def init_databricks(connection_info):
-    # create schema `wren` and some tables for testing
+    # create schema `analytics` and some tables for testing
     try:
         connection = sql.connect(
             server_hostname=connection_info["serverHostname"],
@@ -26,10 +26,10 @@ def init_databricks(connection_info):
             access_token=connection_info["accessToken"],
         )
         with connection.cursor() as cursor:
-            cursor.execute("CREATE SCHEMA IF NOT EXISTS wren;")
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS analytics;")
             cursor.execute(
                 """
-                CREATE OR REPLACE TABLE wren.t1 (
+                CREATE OR REPLACE TABLE analytics.t1 (
                     id INT PRIMARY KEY COMMENT 'This is a primary key',
                     value STRING
                 )
@@ -39,11 +39,11 @@ def init_databricks(connection_info):
             )
             cursor.execute(
                 """
-                CREATE OR REPLACE TABLE wren.t2 (
+                CREATE OR REPLACE TABLE analytics.t2 (
                     id INT,
                     t1_id INT,
                     value STRING,
-                    CONSTRAINT fk_t1 FOREIGN KEY (t1_id) REFERENCES wren.t1(id)
+                    CONSTRAINT fk_t1 FOREIGN KEY (t1_id) REFERENCES analytics.t1(id)
                 );
                 """
             )

@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 
 load_dotenv(override=True)
-manifest_json_path = os.getenv("WREN_MANIFEST_JSON_PATH")
+manifest_json_path = os.getenv("ANALYTICS_MANIFEST_JSON_PATH")
 print("Manifest JSON Path:", manifest_json_path)
 
 

@@ -4,7 +4,7 @@ import orjson
 import pytest
 
 from app.config import get_config
-from app.dependencies import X_WREN_FALLBACK_DISABLE
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE
 from tests.conftest import DATAFUSION_FUNCTION_COUNT
 from tests.routers.v3.connector.oracle.conftest import base_url, function_list_path
 
@@ -72,7 +72,7 @@ async def test_scalar_function(client, manifest_str: str, connection_info):
             "sql": "SELECT ABS(-1) AS col",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -93,7 +93,7 @@ async def test_aggregate_function(client, manifest_str: str, connection_info):
             "sql": "SELECT COUNT(*) AS col FROM (SELECT 1) AS temp_table",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200

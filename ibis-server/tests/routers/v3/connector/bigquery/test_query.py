@@ -4,11 +4,11 @@ import time
 import orjson
 import pytest
 
-from app.dependencies import X_WREN_FALLBACK_DISABLE, X_WREN_VARIABLE_PREFIX
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE, X_ANALYTICS_VARIABLE_PREFIX
 from tests.routers.v3.connector.bigquery.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "dataSource": "bigquery",
     "models": [
@@ -130,7 +130,7 @@ async def test_query(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 200
@@ -201,7 +201,7 @@ async def test_query_with_cache_override(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response1.status_code == 200
@@ -211,7 +211,7 @@ async def test_query_with_cache_override(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
 
@@ -229,7 +229,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders",
+            "sql": "SELECT * FROM analytics.public.orders",
         },
     )
     assert response.status_code == 200
@@ -242,7 +242,7 @@ async def test_query_with_limit(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 10",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 10",
         },
     )
     assert response.status_code == 200
@@ -256,7 +256,7 @@ async def test_query_with_invalid_manifest_str(client, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": "xxx",
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -267,7 +267,7 @@ async def test_query_without_manifest(client, connection_info):
         url=f"{base_url}/query",
         json={
             "connectionInfo": connection_info,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -296,7 +296,7 @@ async def test_query_without_connection_info(client, manifest_str):
         url=f"{base_url}/query",
         json={
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 422
@@ -314,7 +314,7 @@ async def test_query_with_dry_run(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT * FROM wren.public.orders LIMIT 1",
+            "sql": "SELECT * FROM analytics.public.orders LIMIT 1",
         },
     )
     assert response.status_code == 204
@@ -406,7 +406,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": "SELECT letter FROM null_test ORDER BY id",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -424,7 +424,7 @@ async def test_order_by_nulls_last(client, manifest_str, connection_info):
             "sql": "SELECT letter FROM null_test ORDER BY id desc",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -441,10 +441,10 @@ async def test_count(client, manifest_str, connection_info):
         json={
             "connectionInfo": connection_info,
             "manifestStr": manifest_str,
-            "sql": "SELECT COUNT(*) FROM wren.public.orders",
+            "sql": "SELECT COUNT(*) FROM analytics.public.orders",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200
@@ -456,7 +456,7 @@ async def test_count(client, manifest_str, connection_info):
     assert result["dtypes"] == {"count_40_42_41": "int64"}
 
 
-async def test_cache_with_different_wren_variables(
+async def test_cache_with_different_analytics_variables(
     client, manifest_str, connection_info
 ):
     # First request with session_user = 'Customer#000000001'
@@ -468,7 +468,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response1.status_code == 200
@@ -484,7 +484,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000001'",
         },
     )
     assert response2.status_code == 200
@@ -501,7 +501,7 @@ async def test_cache_with_different_wren_variables(
             "sql": "SELECT c_name FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_user": "'Customer#000000002'",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_user": "'Customer#000000002'",
         },
     )
     assert response3.status_code == 200
@@ -522,7 +522,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response1.status_code == 200
@@ -538,7 +538,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "1",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "1",
         },
     )
     assert response2.status_code == 200
@@ -554,7 +554,7 @@ async def test_cache_with_different_session_levels(
             "sql": "SELECT * FROM customer LIMIT 1",
         },
         headers={
-            X_WREN_VARIABLE_PREFIX + "session_level": "2",
+            X_ANALYTICS_VARIABLE_PREFIX + "session_level": "2",
         },
     )
     assert response3.status_code == 200

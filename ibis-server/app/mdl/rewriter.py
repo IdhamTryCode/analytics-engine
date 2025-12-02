@@ -7,8 +7,8 @@ from loguru import logger
 from opentelemetry import trace
 
 from app.config import get_config
-from app.custom_sqlglot.dialects.wren import Wren
-from app.dependencies import X_WREN_VARIABLE_PREFIX
+from app.custom_sqlglot.dialects.analytics import Analytics
+from app.dependencies import X_ANALYTICS_VARIABLE_PREFIX
 from app.mdl.core import (
     get_manifest_extractor,
     get_session_context,
@@ -16,7 +16,7 @@ from app.mdl.core import (
 )
 from app.mdl.java_engine import JavaEngineConnector
 from app.model.data_source import DataSource
-from app.model.error import PLANNED_SQL, ErrorCode, ErrorPhase, WrenError
+from app.model.error import PLANNED_SQL, ErrorCode, ErrorPhase, AnalyticsError
 
 # To register custom dialects from ibis library for sqlglot
 importlib.import_module("ibis.backends.sql.dialects")
@@ -53,7 +53,7 @@ class Rewriter:
             write = self._get_write_dialect(self.data_source)
             return sqlglot.transpile(planned_sql, read=read, write=write)[0]
         except Exception as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.SQLGLOT_ERROR,
                 str(e),
                 phase=ErrorPhase.SQL_TRANSPILE,
@@ -84,7 +84,7 @@ class Rewriter:
 
     @classmethod
     def _get_read_dialect(cls, experiment) -> str | sqlglot.Dialect:
-        return Wren if experiment else "trino"
+        return Analytics if experiment else "trino"
 
     @classmethod
     def _get_write_dialect(cls, data_source: DataSource) -> str:
@@ -111,16 +111,16 @@ class ExternalEngineRewriter:
         try:
             return await self.java_engine_connector.dry_plan(manifest_str, sql)
         except httpx.ConnectError as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.LEGACY_ENGINE_ERROR, f"Can not connect to Java Engine: {e}"
             )
         except httpx.TimeoutException as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.LEGACY_ENGINE_ERROR,
                 f"Timeout when connecting to Java Engine: {e}",
             )
         except httpx.HTTPStatusError as e:
-            raise WrenError(
+            raise AnalyticsError(
                 ErrorCode.INVALID_SQL, e.response.text, ErrorPhase.SQL_PLANNING
             )
 
@@ -147,7 +147,7 @@ class EmbeddedEngineRewriter:
                 sql,
             )
         except Exception as e:
-            raise WrenError(ErrorCode.INVALID_SQL, str(e), ErrorPhase.SQL_PLANNING)
+            raise AnalyticsError(ErrorCode.INVALID_SQL, str(e), ErrorPhase.SQL_PLANNING)
 
     @tracer.start_as_current_span("embedded_rewrite", kind=trace.SpanKind.INTERNAL)
     def rewrite_sync(
@@ -160,22 +160,22 @@ class EmbeddedEngineRewriter:
             )
             return session_context.transform_sql(sql)
         except Exception as e:
-            raise WrenError(ErrorCode.INVALID_SQL, str(e), ErrorPhase.SQL_PLANNING)
+            raise AnalyticsError(ErrorCode.INVALID_SQL, str(e), ErrorPhase.SQL_PLANNING)
 
     def get_session_properties(self, properties: dict) -> frozenset | None:
         if properties is None:
             return None
-        # filter the properties which name starts with "x-wren-variable-"
-        # and remove the prefix "x-wren-variable-"
+        # filter the properties which name starts with "x-analytics-variable-"
+        # and remove the prefix "x-analytics-variable-"
 
         processed_properties = {
-            k.replace(X_WREN_VARIABLE_PREFIX, ""): v
+            k.replace(X_ANALYTICS_VARIABLE_PREFIX, ""): v
             for k, v in properties.items()
-            if k.startswith(X_WREN_VARIABLE_PREFIX)
+            if k.startswith(X_ANALYTICS_VARIABLE_PREFIX)
         }
 
         return frozenset(processed_properties.items())
 
     @staticmethod
     def handle_extract_exception(e: Exception):
-        raise WrenError(ErrorCode.INVALID_MDL, str(e), ErrorPhase.MDL_EXTRACTION)
+        raise AnalyticsError(ErrorCode.INVALID_MDL, str(e), ErrorPhase.MDL_EXTRACTION)

@@ -182,7 +182,7 @@ async def test_dry_run(client, manifest_str):
 
 async def test_query_duckdb_format(client):
     manifest = {
-        "catalog": "wren",
+        "catalog": "analytics",
         "schema": "public",
         "models": [
             {

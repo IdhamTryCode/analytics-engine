@@ -18,7 +18,7 @@ logger_format = (
 class Config:
     def __init__(self):
         load_dotenv(override=True)
-        self.wren_engine_endpoint = os.getenv("WREN_ENGINE_ENDPOINT")
+        self.analytics_engine_endpoint = os.getenv("ANALYTICS_ENGINE_ENDPOINT")
         self.remote_function_list_path = os.getenv("REMOTE_FUNCTION_LIST_PATH")
         self.remote_white_function_list_path = os.getenv(
             "REMOTE_WHITE_FUNCTION_LIST_PATH"

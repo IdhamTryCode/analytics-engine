@@ -7,7 +7,7 @@ from app.model.validator import rules
 from tests.routers.v3.connector.postgres.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {

@@ -1,10 +1,10 @@
-# Wren MCP Server
+# Analytics MCP Server
 
-The **Wren MCP Server** is a **Model Context Protocol (MCP) server** that provides tools for interacting with **Wren Engine** to facilitate AI agent integration.
+The **Analytics MCP Server** is a **Model Context Protocol (MCP) server** that provides tools for interacting with **Analytics Engine** to facilitate AI agent integration.
 
 ## Requirements
 
-Before setting up the Wren MCP Server, ensure you have the following dependency installed:
+Before setting up the Analytics MCP Server, ensure you have the following dependency installed:
 
 - **[uv](https://docs.astral.sh/uv/getting-started/installation/#installing-uv)** - A fast and efficient Python package manager.
 
@@ -14,13 +14,13 @@ The server requires the following environment variables to be set:
 
 | Variable | Description |
 |----------|------------|
-| `WREN_URL` | The URL of the **Wren Ibis server**. |
+| `ANALYTICS_URL` | The URL of the **Analytics Ibis server**. |
 | `CONNECTION_INFO_FILE` | The path to the **required connection info file**. |
 | `MDL_PATH` | The path to the **MDL file**. |
 
 ### Connection Info
 
-The following JSON is a connection info of a Postgres. You can find the requried fields for each data source in the [source code](https://github.com/Canner/wren-engine/blob/4ac283ee0754b12a8c3b0a6f13b32c935fcb7b0d/ibis-server/app/model/__init__.py#L75).
+The following JSON is a connection info of a Postgres. You can find the requried fields for each data source in the [source code](https://github.com/Canner/analytics-engine/blob/4ac283ee0754b12a8c3b0a6f13b32c935fcb7b0d/ibis-server/app/model/__init__.py#L75).
 ```json
 {
     "host": "localhost",
@@ -37,7 +37,7 @@ In the MDL, the `dataSource` field is required to indicate which data source sho
 
 ### `.env` File Support
 
-Wren MCP Server supports an `.env` file for easier environment configuration. You can define all the required environment variables in this file.
+Analytics MCP Server supports an `.env` file for easier environment configuration. You can define all the required environment variables in this file.
 
 ---
 
@@ -52,15 +52,15 @@ Using CPython 3.11.11
 Creating virtual environment at: .venv
 Activate with: source .venv/bin/activate
 > source .venv/bin/activate   
-> uv run app/wren.py
+> uv run app/analytics.py
 Loaded MDL etc/mdl.json
 Loaded connection info etc/pg_conneciton.json
 ```
 You would see that the MDL and connection info are loaded. Then, you can use `Ctrl + C` terminate the process.
 
-### 2. Start Wren Engine and Ibis Server
+### 2. Start Analytics Engine and Ibis Server
 
-- If you **already have a running Wren Engine**, ensure that `WREN_URL` is correctly set to point to your server.
+- If you **already have a running Analytics Engine**, ensure that `ANALYTICS_URL` is correctly set to point to your server.
 - If you **don't have a running engine**, you can start one using Docker:
 
   ```sh
@@ -82,16 +82,16 @@ Create a configuration file with the following structure:
 ```json
 {
     "mcpServers": {
-        "wren": {
+        "analytics": {
             "command": "uv",
             "args": [
                 "--directory",
-                "/ABSOLUTE/PATH/TO/PARENT/FOLDER/wren-engine/mcp-server",
+                "/ABSOLUTE/PATH/TO/PARENT/FOLDER/analytics-engine/mcp-server",
                 "run",
-                "app/wren.py"
+                "app/analytics.py"
             ],
             "env": {
-                "WREN_URL": "localhost:8000",
+                "ANALYTICS_URL": "localhost:8000",
                 "CONNECTION_INFO_FILE": "/path-to-connection-info/connection.json",
                 "MDL_PATH": "/path-to-mdl/mdl.json"
             },
@@ -111,35 +111,35 @@ Create a configuration file with the following structure:
 
 ### 5. Choose an AI Agent That Supports MCP Server
 
-The following AI agents are compatible with Wren MCP Server and deploy the MCP config:
+The following AI agents are compatible with Analytics MCP Server and deploy the MCP config:
 
 - **[Claude Desktop](https://modelcontextprotocol.io/quickstart/user)**  
 - **[Cline](https://docs.cline.bot/mcp-servers/mcp-quickstart)**  
 - **[VsCode MCP Extension](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)**
 
-### 6. Check the Wren Engine is Connected
+### 6. Check the Analytics Engine is Connected
 
-You can ask the AI agent to perform a health check for Wren Engine.
+You can ask the AI agent to perform a health check for Analytics Engine.
 
 ### 7. Start the Conversation
 
-Now, you can start asking questions through your AI agent and interact with Wren Engine.
-Tip: prime your agent with a short instruction so it knows how to use the Wren MCP tools.
+Now, you can start asking questions through your AI agent and interact with Analytics Engine.
+Tip: prime your agent with a short instruction so it knows how to use the Analytics MCP tools.
 
 Recommended prompt:
 ```
-Use the get_wren_guide() tool to learn how to use Wren Engine and discover available tools and examples.
+Use the get_analytics_guide() tool to learn how to use Analytics Engine and discover available tools and examples.
 ```
 
 Optional follow-ups:
-- "Open the Wren guide."
-- "What Wren MCP tools are available?"
-- "Show me the available tables in Wren Engine."
-- "Query Wren Engine to get ... (your question here)."
+- "Open the Analytics guide."
+- "What Analytics MCP tools are available?"
+- "Show me the available tables in Analytics Engine."
+- "Query Analytics Engine to get ... (your question here)."
 
 ---
 
 ## Additional Resources
 
-- **Wren Engine Documentation**: [Wren AI](https://getwren.ai/)  
+- **Analytics Engine Documentation**: [Analytics AI](https://getanalytics.ai/)  
 - **MCP Protocol Guide**: [Model Context Protocol](https://modelcontextprotocol.io/)  

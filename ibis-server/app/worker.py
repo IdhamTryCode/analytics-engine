@@ -1,5 +1,5 @@
 from uvicorn.workers import UvicornWorker
 
 
-class WrenUvicornWorker(UvicornWorker):
+class AnalyticsUvicornWorker(UvicornWorker):
     CONFIG_KWARGS = {"loop": "uvloop", "http": "httptools"}

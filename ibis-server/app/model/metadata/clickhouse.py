@@ -5,7 +5,7 @@ from app.model.data_source import DataSource
 from app.model.metadata.dto import (
     Column,
     Constraint,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -14,32 +14,32 @@ from app.model.metadata.metadata import Metadata
 # ClickHouse-specific type mapping
 CLICKHOUSE_TYPE_MAPPING = {
     # Boolean Types
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Integer Types
-    "int8": RustWrenEngineColumnType.TINYINT,
-    "uint8": RustWrenEngineColumnType.INT2,
-    "int16": RustWrenEngineColumnType.INT2,
-    "uint16": RustWrenEngineColumnType.INT2,
-    "int32": RustWrenEngineColumnType.INT4,
-    "uint32": RustWrenEngineColumnType.INT4,
-    "int64": RustWrenEngineColumnType.INT8,
-    "uint64": RustWrenEngineColumnType.INT8,
+    "int8": RustAnalyticsEngineColumnType.TINYINT,
+    "uint8": RustAnalyticsEngineColumnType.INT2,
+    "int16": RustAnalyticsEngineColumnType.INT2,
+    "uint16": RustAnalyticsEngineColumnType.INT2,
+    "int32": RustAnalyticsEngineColumnType.INT4,
+    "uint32": RustAnalyticsEngineColumnType.INT4,
+    "int64": RustAnalyticsEngineColumnType.INT8,
+    "uint64": RustAnalyticsEngineColumnType.INT8,
     # Float Types
-    "float32": RustWrenEngineColumnType.FLOAT4,
-    "float64": RustWrenEngineColumnType.FLOAT8,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
+    "float32": RustAnalyticsEngineColumnType.FLOAT4,
+    "float64": RustAnalyticsEngineColumnType.FLOAT8,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
     # Date/Time Types
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
     # String Types
-    "string": RustWrenEngineColumnType.VARCHAR,
-    "fixedstring": RustWrenEngineColumnType.CHAR,
+    "string": RustAnalyticsEngineColumnType.VARCHAR,
+    "fixedstring": RustAnalyticsEngineColumnType.CHAR,
     # Special Types
-    "uuid": RustWrenEngineColumnType.UUID,
-    "enum8": RustWrenEngineColumnType.STRING,  # Enums can be mapped to strings
-    "enum16": RustWrenEngineColumnType.STRING,  # Enums can be mapped to strings
-    "ipv4": RustWrenEngineColumnType.INET,
-    "ipv6": RustWrenEngineColumnType.INET,
+    "uuid": RustAnalyticsEngineColumnType.UUID,
+    "enum8": RustAnalyticsEngineColumnType.STRING,  # Enums can be mapped to strings
+    "enum16": RustAnalyticsEngineColumnType.STRING,  # Enums can be mapped to strings
+    "ipv4": RustAnalyticsEngineColumnType.INET,
+    "ipv6": RustAnalyticsEngineColumnType.INET,
 }
 
 
@@ -109,24 +109,24 @@ class ClickHouseMetadata(Metadata):
     def _format_compact_table_name(self, schema: str, table: str):
         return f"{schema}.{table}"
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform ClickHouse data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform ClickHouse data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The ClickHouse data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Convert to lowercase for comparison
         normalized_type = data_type.lower()
 
         # Use the module-level mapping table
         mapped_type = CLICKHOUSE_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown ClickHouse data type: {data_type}")
 
         return mapped_type

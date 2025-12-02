@@ -1,18 +1,18 @@
 from functools import cache
 
-import wren_core
+import analytics_core
 
 
 @cache
 def get_session_context(
     manifest_str: str | None, function_path: str, properties: frozenset | None = None
-) -> wren_core.SessionContext:
-    return wren_core.SessionContext(manifest_str, function_path, properties)
+) -> analytics_core.SessionContext:
+    return analytics_core.SessionContext(manifest_str, function_path, properties)
 
 
-def get_manifest_extractor(manifest_str: str) -> wren_core.ManifestExtractor:
-    return wren_core.ManifestExtractor(manifest_str)
+def get_manifest_extractor(manifest_str: str) -> analytics_core.ManifestExtractor:
+    return analytics_core.ManifestExtractor(manifest_str)
 
 
 def to_json_base64(manifest) -> str:
-    return wren_core.to_json_base64(manifest)
+    return analytics_core.to_json_base64(manifest)

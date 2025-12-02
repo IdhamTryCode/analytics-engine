@@ -1,5 +1,5 @@
 {
-  "catalog": "wren",
+  "catalog": "analytics",
   "schema": "tpch",
   "models": [
     {

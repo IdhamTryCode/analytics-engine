@@ -19,7 +19,7 @@ manifest = {
         {
             "name": "Orders",
             "tableReference": {
-                "table": f"gs://{bucket}/wren-private-test/tpch/data/orders.parquet",
+                "table": f"gs://{bucket}/analytics-private-test/tpch/data/orders.parquet",
             },
             "columns": [
                 {"name": "orderkey", "expression": "o_orderkey", "type": "integer"},
@@ -46,7 +46,7 @@ manifest = {
         {
             "name": "Customer",
             "tableReference": {
-                "table": f"gs://{bucket}/wren-private-test/tpch/data/customer.parquet",
+                "table": f"gs://{bucket}/analytics-private-test/tpch/data/customer.parquet",
             },
             "columns": [
                 {
@@ -89,7 +89,7 @@ def manifest_str():
 @pytest.fixture(scope="module")
 def connection_info() -> dict[str, str]:
     return {
-        "url": "/wren-private-test/tpch/data",
+        "url": "/analytics-private-test/tpch/data",
         "format": "parquet",
         "bucket": bucket,
         "key_id": key_id,
@@ -243,7 +243,7 @@ async def test_metadata_list_tables(client, connection_info):
         "catalog": None,
         "schema": None,
         "table": "orders",
-        "path": f"gs://{bucket}/wren-private-test/tpch/data/orders.parquet",
+        "path": f"gs://{bucket}/analytics-private-test/tpch/data/orders.parquet",
     }
     assert len(result["columns"]) == 9
     assert result["columns"][8] == {
@@ -282,7 +282,7 @@ async def test_unsupported_format(client):
         url=f"{base_url}/metadata/tables",
         json={
             "connectionInfo": {
-                "url": "/wren-private-test/tpch/data",
+                "url": "/analytics-private-test/tpch/data",
                 "format": "unsupported",
                 "bucket": bucket,
                 "key_id": key_id,
@@ -303,7 +303,7 @@ async def test_list_parquet_files(client):
         url=f"{base_url}/metadata/tables",
         json={
             "connectionInfo": {
-                "url": "/wren-private-test/test_file_source",
+                "url": "/analytics-private-test/test_file_source",
                 "format": "parquet",
                 "bucket": bucket,
                 "key_id": key_id,
@@ -373,7 +373,7 @@ async def test_list_csv_files(client):
         url=f"{base_url}/metadata/tables",
         json={
             "connectionInfo": {
-                "url": "/wren-private-test/test_file_source",
+                "url": "/analytics-private-test/test_file_source",
                 "format": "csv",
                 "bucket": bucket,
                 "key_id": key_id,
@@ -444,7 +444,7 @@ async def test_list_json_files(client):
         url=f"{base_url}/metadata/tables",
         json={
             "connectionInfo": {
-                "url": "/wren-private-test/test_file_source",
+                "url": "/analytics-private-test/test_file_source",
                 "format": "json",
                 "bucket": bucket,
                 "key_id": key_id,

@@ -14,7 +14,7 @@ from app.dependencies import X_CORRELATION_ID
 from app.mdl.java_engine import JavaEngineConnector
 from app.middleware import ProcessTimeMiddleware, RequestLogMiddleware
 from app.model import ConfigModel
-from app.model.error import ErrorCode, ErrorResponse, WrenError
+from app.model.error import ErrorCode, ErrorResponse, AnalyticsError
 from app.query_cache import QueryCacheManager
 from app.routers import v2, v3
 
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         }
 
 
-app = FastAPI(lifespan=lifespan, title="Wren Engine API")
+app = FastAPI(lifespan=lifespan, title="Analytics Engine API")
 app.include_router(v2.router)
 app.include_router(v3.router)
 app.add_middleware(RequestLogMiddleware)
@@ -88,8 +88,8 @@ def exception_handler(request, exc: Exception):
 
 
 # In Starlette, the exceptions other than the Exception are not raised when call_next in the middleware.
-@app.exception_handler(WrenError)
-def wren_error_handler(request, exc: WrenError):
+@app.exception_handler(AnalyticsError)
+def analytics_error_handler(request, exc: AnalyticsError):
     with logger.contextualize(correlation_id=request.headers.get(X_CORRELATION_ID)):
         logger.opt(exception=exc).error("Request failed")
     return ORJSONResponse(

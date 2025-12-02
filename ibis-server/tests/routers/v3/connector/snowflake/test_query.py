@@ -3,17 +3,17 @@ import base64
 import orjson
 import pytest
 
-from app.dependencies import X_WREN_FALLBACK_DISABLE
+from app.dependencies import X_ANALYTICS_FALLBACK_DISABLE
 from tests.routers.v3.connector.snowflake.conftest import base_url
 
 manifest = {
-    "catalog": "wren",
+    "catalog": "analytics",
     "schema": "public",
     "models": [
         {
             "name": "car_sales",
             "tableReference": {
-                "catalog": "wren",
+                "catalog": "analytics",
                 "schema": "PUBLIC",
                 "table": "car_sales",
             },
@@ -40,7 +40,7 @@ async def test_qeury(client, manifest_str, snowflake_connection_info):
             "sql": "select t.a from car_sales c, UNNEST(to_array(get_path(c.src, 'customer'))) t(a)",
         },
         headers={
-            X_WREN_FALLBACK_DISABLE: "true",
+            X_ANALYTICS_FALLBACK_DISABLE: "true",
         },
     )
     assert response.status_code == 200

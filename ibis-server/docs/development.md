@@ -49,9 +49,9 @@ To start the server:
 ### Run the testing
 
 - Prepare the Java Engine server (see [Java Engine Example](../../example/README.md))
-- Use the `.env` file to set the `WREN_ENGINE_ENDPOINT` environment variable to change the endpoint of the Java Engine server.
+- Use the `.env` file to set the `ANALYTICS_ENGINE_ENDPOINT` environment variable to change the endpoint of the Java Engine server.
   ```
-  WREN_ENGINE_ENDPOINT=http://localhost:8080
+  ANALYTICS_ENGINE_ENDPOINT=http://localhost:8080
   ```
   More information about the environment variables can be found in the [Environment Variables](#Environment-Variables) section.
 - Run specific data source test using [pytest marker](https://docs.pytest.org/en/stable/example/markers.html). There are some markers for different data sources. See the list
@@ -62,8 +62,8 @@ To start the server:
 
 ### Environment Variables
 
-- `WREN_ENGINE_ENDPOINT`: The endpoint of the Wren Java engine
-- `WREN_NUM_WORKERS`: The number of gunicoron workers
+- `ANALYTICS_ENGINE_ENDPOINT`: The endpoint of the Analytics Java engine
+- `ANALYTICS_NUM_WORKERS`: The number of gunicoron workers
 
 ### OpenTelemetry Envrionment Variables
 - `OTLP_ENABLED`: Enable the tracing for Ibis Server.
@@ -72,7 +72,7 @@ To start the server:
   ```
   OTLP_ENABLED=true
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://host.docker.internal:4317
-  OTEL_SERVICE_NAME=wren-engine
+  OTEL_SERVICE_NAME=analytics-engine
   OTEL_TRACES_EXPORTER=otlp
   OTEL_METRICS_EXPORTER=none
   OTEL_LOGS_EXPORTER=none
@@ -109,7 +109,7 @@ If you encounter this error, you can add the `TrustServerCertificate` parameter 
 
 ### No driver for MySQL Server
 
-If you want run tests related to MySQL Server or connect to MySQL through Wren Engine, you need to install the MySQL client libraries (e.g. `libmysqlclient`) by yourself.
+If you want run tests related to MySQL Server or connect to MySQL through Analytics Engine, you need to install the MySQL client libraries (e.g. `libmysqlclient`) by yourself.
 - For linux, you can install `libmysqlclient-dev`. By the way, there are some different names for different linux versions. You should take care about it.
 - For Mac, you can install `mysql-connector-c`
 - For Windows, you can dowanload [the libraries](https://dev.mysql.com/downloads/c-api)

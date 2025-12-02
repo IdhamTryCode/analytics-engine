@@ -8,15 +8,15 @@ dependencies:
 
 python:
 - changed-files:
-  - any-glob-to-any-file: ['ibis-server/**', 'wren-core-py/**']
+  - any-glob-to-any-file: ['ibis-server/**', 'analytics-core-py/**']
 
 rust:
 - changed-files:
-  - any-glob-to-any-file: ['wren-core/**']
+  - any-glob-to-any-file: ['analytics-core/**']
 
 core:
 - changed-files:
-  - any-glob-to-any-file: ['wren-core/**']
+  - any-glob-to-any-file: ['analytics-core/**']
 
 documentation:
 - changed-files:
@@ -32,4 +32,4 @@ ci:
 
 v1-engine-changed:
 - changed-files:
-  - any-glob-to-any-file: ['wren-base/**', 'wren-main/**', 'wren-server/**', 'wren-tests/**', 'trino-parser/**', 'pom.xml']
+  - any-glob-to-any-file: ['analytics-base/**', 'analytics-main/**', 'analytics-server/**', 'analytics-tests/**', 'trino-parser/**', 'pom.xml']

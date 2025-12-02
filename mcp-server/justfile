@@ -2,9 +2,9 @@ default:
     @just --list --unsorted
 
 build-core:
-    cd ../wren-core-py && just install && just build
+    cd ../analytics-core-py && just install && just build
 
-core-wheel-path := "../wren-core-py/target/wheels/wren_core_py-*.whl"
+core-wheel-path := "../analytics-core-py/target/wheels/analytics_core_py-*.whl"
 
 install-core:
     # just build-core

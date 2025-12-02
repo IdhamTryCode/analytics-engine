@@ -5,7 +5,7 @@
 # - sql: stdin input a SQL query
 #
 # Environment variables:
-# - WREN_MANIFEST_JSON_PATH: path to the manifest JSON file
+# - ANALYTICS_MANIFEST_JSON_PATH: path to the manifest JSON file
 # - REMOTE_FUNCTION_LIST_PATH: path to the function list file
 # - CONNECTION_INFO_PATH: path to the connection info file
 # - DATA_SOURCE: data source name
@@ -14,7 +14,7 @@
 import base64
 import json
 import os
-from app.custom_sqlglot.dialects.wren import Wren
+from app.custom_sqlglot.dialects.analytics import Analytics
 from app.model import MSSqlConnectionInfo, MySqlConnectionInfo, OracleConnectionInfo, PostgresConnectionInfo, SnowflakeConnectionInfo
 from app.util import to_json
 import sqlglot
@@ -22,10 +22,10 @@ import sys
 import pandas as pd
 
 from dotenv import load_dotenv
-from wren_core import SessionContext
+from analytics_core import SessionContext
 from app.model.data_source import BigQueryConnectionInfo
 from app.model.data_source import DataSourceExtension
-import wren_core
+import analytics_core
 
 if sys.stdin.isatty():
     print("please provide the SQL query via stdin, e.g. `python query_local_run.py < test.sql`", file=sys.stderr)
@@ -35,13 +35,13 @@ sql = sys.stdin.read()
 
 
 load_dotenv(override=True)
-manifest_json_path = os.getenv("WREN_MANIFEST_JSON_PATH")
+manifest_json_path = os.getenv("ANALYTICS_MANIFEST_JSON_PATH")
 function_list_path = os.getenv("REMOTE_FUNCTION_LIST_PATH")
 connection_info_path = os.getenv("CONNECTION_INFO_PATH")
 data_source = os.getenv("DATA_SOURCE")
 
 # Welcome message
-print("### Welcome to the Wren Core Query Runner ###")
+print("### Welcome to the Analytics Core Query Runner ###")
 print("#")
 print("# Manifest JSON Path:", manifest_json_path)
 print("# Function List Path:", function_list_path)
@@ -62,12 +62,12 @@ with open(connection_info_path) as file:
     connection_info = json.load(file)
 
 # Extract the requried tables from the SQL query
-extractor = wren_core.ManifestExtractor(encoded_str)
+extractor = analytics_core.ManifestExtractor(encoded_str)
 tables = extractor.resolve_used_table_names(sql)
 print("# Tables used in the SQL query:", tables)
 # Extract the manifest for the required tables
 manifest = extractor.extract_by(tables)
-encoded_str = wren_core.to_json_base64(manifest)
+encoded_str = analytics_core.to_json_base64(manifest)
 
 print("### Starting the session context ###")
 print("#")
@@ -84,9 +84,9 @@ print("# Planned SQL:\n", planned_sql)
 # Transpile the planned SQL
 if data_source == "mssql":
     # For mssql, we need to use the "tsql" dialect for reading
-    dialect_sql = sqlglot.transpile(planned_sql, read=Wren, write="tsql")[0]
+    dialect_sql = sqlglot.transpile(planned_sql, read=Analytics, write="tsql")[0]
 else:
-    dialect_sql = sqlglot.transpile(planned_sql, read=Wren, write=data_source)[0]
+    dialect_sql = sqlglot.transpile(planned_sql, read=Analytics, write=data_source)[0]
 print("# Dialect SQL:\n", dialect_sql)
 print("#")
 

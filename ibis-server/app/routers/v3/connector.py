@@ -13,8 +13,8 @@ from app.dependencies import (
     X_CACHE_HIT,
     X_CACHE_OVERRIDE,
     X_CACHE_OVERRIDE_AT,
-    X_WREN_FALLBACK_DISABLE,
-    get_wren_headers,
+    X_ANALYTICS_FALLBACK_DISABLE,
+    get_analytics_headers,
     is_backward_compatible,
     verify_query_dto,
 )
@@ -71,7 +71,7 @@ async def query(
         bool, Query(alias="overrideCache", description="ovrride the exist cache")
     ] = False,
     limit: int | None = Query(None, description="limit the number of rows returned"),
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
     query_cache_manager: QueryCacheManager = Depends(get_query_cache_manager),
 ) -> Response:
@@ -195,8 +195,8 @@ async def query(
             raise
         except Exception as e:
             is_fallback_disable = bool(
-                headers.get(X_WREN_FALLBACK_DISABLE)
-                and safe_strtobool(headers.get(X_WREN_FALLBACK_DISABLE, "false"))
+                headers.get(X_ANALYTICS_FALLBACK_DISABLE)
+                and safe_strtobool(headers.get(X_ANALYTICS_FALLBACK_DISABLE, "false"))
             )
             # because the v2 API doesn't support row-level access control,
             # we don't fallback to v2 if the header include row-level access control properties.
@@ -232,9 +232,9 @@ async def query(
                 raise e from None
 
 
-@router.post("/dry-plan", description="get the planned WrenSQL")
+@router.post("/dry-plan", description="get the planned AnalyticsSQL")
 async def dry_plan(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     dto: DryPlanDTO,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
 ) -> str:
@@ -248,8 +248,8 @@ async def dry_plan(
             ).rewrite(dto.sql)
         except Exception as e:
             is_fallback_disable = bool(
-                headers.get(X_WREN_FALLBACK_DISABLE)
-                and safe_strtobool(headers.get(X_WREN_FALLBACK_DISABLE, "false"))
+                headers.get(X_ANALYTICS_FALLBACK_DISABLE)
+                and safe_strtobool(headers.get(X_ANALYTICS_FALLBACK_DISABLE, "false"))
             )
             # because the v2 API doesn't support row-level access control,
             # we don't fallback to v2 if the header include row-level access control properties.
@@ -284,7 +284,7 @@ async def dry_plan(
     description="get the dialect SQL for the specified data source",
 )
 async def dry_plan_for_data_source(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     data_source: DataSource,
     dto: DryPlanDTO,
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
@@ -303,8 +303,8 @@ async def dry_plan_for_data_source(
             ).rewrite(dto.sql)
         except Exception as e:
             is_fallback_disable = bool(
-                headers.get(X_WREN_FALLBACK_DISABLE)
-                and safe_strtobool(headers.get(X_WREN_FALLBACK_DISABLE, "false"))
+                headers.get(X_ANALYTICS_FALLBACK_DISABLE)
+                and safe_strtobool(headers.get(X_ANALYTICS_FALLBACK_DISABLE, "false"))
             )
             # because the v2 API doesn't support row-level access control,
             # we don't fallback to v2 if the header include row-level access control properties.
@@ -340,7 +340,7 @@ async def dry_plan_for_data_source(
     "/{data_source}/validate/{rule_name}", description="validate the specified rule"
 )
 async def validate(
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     data_source: DataSource,
     rule_name: str,
     dto: ValidateDTO,
@@ -376,8 +376,8 @@ async def validate(
             raise
         except Exception as e:
             is_fallback_disable = bool(
-                headers.get(X_WREN_FALLBACK_DISABLE)
-                and safe_strtobool(headers.get(X_WREN_FALLBACK_DISABLE, "false"))
+                headers.get(X_ANALYTICS_FALLBACK_DISABLE)
+                and safe_strtobool(headers.get(X_ANALYTICS_FALLBACK_DISABLE, "false"))
             )
             # because the v2 API doesn't support row-level access control,
             # we don't fallback to v2 if the header include row-level access control properties.
@@ -416,7 +416,7 @@ async def validate(
 )
 def functions(
     data_source: DataSource,
-    headers: Annotated[Headers, Depends(get_wren_headers)] = None,
+    headers: Annotated[Headers, Depends(get_analytics_headers)] = None,
 ) -> Response:
     span_name = f"v3_functions_{data_source}"
     with tracer.start_as_current_span(
@@ -449,7 +449,7 @@ def functions(
 async def model_substitute(
     data_source: DataSource,
     dto: TranspileDTO,
-    headers: Annotated[Headers, Depends(get_wren_headers)],
+    headers: Annotated[Headers, Depends(get_analytics_headers)],
     java_engine_connector: JavaEngineConnector = Depends(get_java_engine_connector),
 ) -> str:
     span_name = f"v3_model-substitute_{data_source}"
@@ -480,8 +480,8 @@ async def model_substitute(
             raise
         except Exception as e:
             is_fallback_disable = bool(
-                headers.get(X_WREN_FALLBACK_DISABLE)
-                and safe_strtobool(headers.get(X_WREN_FALLBACK_DISABLE, "false"))
+                headers.get(X_ANALYTICS_FALLBACK_DISABLE)
+                and safe_strtobool(headers.get(X_ANALYTICS_FALLBACK_DISABLE, "false"))
             )
             if (
                 java_engine_connector.client is None

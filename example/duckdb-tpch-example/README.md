@@ -1,7 +1,7 @@
 # Description
 
 This is an example Docker Compose project for DuckDB data source with some tpch data.
-You can learn how to set up the Wren Engine with DuckDB data source to analyze your data.
+You can learn how to set up the Analytics Engine with DuckDB data source to analyze your data.
 
 # How to use
 
@@ -15,7 +15,7 @@ You can learn how to set up the Wren Engine with DuckDB data source to analyze y
     ```bash
     docker compose --env-file .env up
     ```
-8. Call the Wren Engine API to analyze your data with the request body as below.
+8. Call the Analytics Engine API to analyze your data with the request body as below.
    - URL
       ```
       GET http://localhost:8080/v1/mdl/preview
@@ -24,7 +24,7 @@ You can learn how to set up the Wren Engine with DuckDB data source to analyze y
       ```json
          {
             "manifest": {
-                           "catalog": "wren",
+                           "catalog": "analytics",
                            "schema": "tpch",
                            "models": [
                               {

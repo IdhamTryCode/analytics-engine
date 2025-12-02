@@ -1,4 +1,4 @@
-# Welcome to Wren Engine contributing guide <!-- omit in toc -->
+# Welcome to Analytics Engine contributing guide <!-- omit in toc -->
 
 Thank you for investing your time in contributing to our project!
 
@@ -21,11 +21,11 @@ To get an overview of the project, read the [README](../README.md) and [developm
 
 #### Create a new issue
 
-If you spot a problem, search if an issue already exists. If a related issue doesn't exist, you can open a new [issue](https://github.com/Canner/wren-engine/issues/new).
+If you spot a problem, search if an issue already exists. If a related issue doesn't exist, you can open a new [issue](https://github.com/Canner/analytics-engine/issues/new).
 
 #### Solve an issue
 
-Scan through our [existing issues](https://github.com/Canner/wren-engine/issues) to find one that interests you. You can narrow down the search using `labels` as filters. As a general rule, we don’t assign issues to anyone. If you find an issue to work on, you are welcome to open a PR with a fix.
+Scan through our [existing issues](https://github.com/Canner/analytics-engine/issues) to find one that interests you. You can narrow down the search using `labels` as filters. As a general rule, we don’t assign issues to anyone. If you find an issue to work on, you are welcome to open a PR with a fix.
 
 ### Pull Request
 

@@ -8,7 +8,7 @@ from app.model.data_source import DataSource
 from app.model.metadata.dto import (
     Column,
     Constraint,
-    RustWrenEngineColumnType,
+    RustAnalyticsEngineColumnType,
     Table,
     TableProperties,
 )
@@ -18,36 +18,36 @@ from app.model.metadata.metadata import Metadata
 # All possible types listed here: https://trino.io/docs/current/language/types.html
 TRINO_TYPE_MAPPING = {
     # String Types (ignore Binary and Spatial Types for now)
-    "char": RustWrenEngineColumnType.CHAR,
-    "varchar": RustWrenEngineColumnType.VARCHAR,
-    "tinytext": RustWrenEngineColumnType.TEXT,
-    "text": RustWrenEngineColumnType.TEXT,
-    "mediumtext": RustWrenEngineColumnType.TEXT,
-    "longtext": RustWrenEngineColumnType.TEXT,
-    "enum": RustWrenEngineColumnType.VARCHAR,
-    "set": RustWrenEngineColumnType.VARCHAR,
+    "char": RustAnalyticsEngineColumnType.CHAR,
+    "varchar": RustAnalyticsEngineColumnType.VARCHAR,
+    "tinytext": RustAnalyticsEngineColumnType.TEXT,
+    "text": RustAnalyticsEngineColumnType.TEXT,
+    "mediumtext": RustAnalyticsEngineColumnType.TEXT,
+    "longtext": RustAnalyticsEngineColumnType.TEXT,
+    "enum": RustAnalyticsEngineColumnType.VARCHAR,
+    "set": RustAnalyticsEngineColumnType.VARCHAR,
     # Numeric Types
-    "bit": RustWrenEngineColumnType.TINYINT,
-    "tinyint": RustWrenEngineColumnType.TINYINT,
-    "smallint": RustWrenEngineColumnType.SMALLINT,
-    "mediumint": RustWrenEngineColumnType.INTEGER,
-    "int": RustWrenEngineColumnType.INTEGER,
-    "integer": RustWrenEngineColumnType.INTEGER,
-    "bigint": RustWrenEngineColumnType.BIGINT,
+    "bit": RustAnalyticsEngineColumnType.TINYINT,
+    "tinyint": RustAnalyticsEngineColumnType.TINYINT,
+    "smallint": RustAnalyticsEngineColumnType.SMALLINT,
+    "mediumint": RustAnalyticsEngineColumnType.INTEGER,
+    "int": RustAnalyticsEngineColumnType.INTEGER,
+    "integer": RustAnalyticsEngineColumnType.INTEGER,
+    "bigint": RustAnalyticsEngineColumnType.BIGINT,
     # Boolean Types
-    "bool": RustWrenEngineColumnType.BOOL,
-    "boolean": RustWrenEngineColumnType.BOOL,
+    "bool": RustAnalyticsEngineColumnType.BOOL,
+    "boolean": RustAnalyticsEngineColumnType.BOOL,
     # Decimal Types
-    "float": RustWrenEngineColumnType.FLOAT4,
-    "double": RustWrenEngineColumnType.DOUBLE,
-    "decimal": RustWrenEngineColumnType.DECIMAL,
-    "numeric": RustWrenEngineColumnType.NUMERIC,
+    "float": RustAnalyticsEngineColumnType.FLOAT4,
+    "double": RustAnalyticsEngineColumnType.DOUBLE,
+    "decimal": RustAnalyticsEngineColumnType.DECIMAL,
+    "numeric": RustAnalyticsEngineColumnType.NUMERIC,
     # Date and Time Types
-    "date": RustWrenEngineColumnType.DATE,
-    "datetime": RustWrenEngineColumnType.TIMESTAMP,
-    "timestamp": RustWrenEngineColumnType.TIMESTAMPTZ,
+    "date": RustAnalyticsEngineColumnType.DATE,
+    "datetime": RustAnalyticsEngineColumnType.TIMESTAMP,
+    "timestamp": RustAnalyticsEngineColumnType.TIMESTAMPTZ,
     # JSON Type
-    "json": RustWrenEngineColumnType.JSON,
+    "json": RustAnalyticsEngineColumnType.JSON,
 }
 
 
@@ -135,24 +135,24 @@ class TrinoMetadata(Metadata):
         else:
             return self.connection_info.trino_schema.get_secret_value()
 
-    def _transform_column_type(self, data_type: str) -> RustWrenEngineColumnType:
-        """Transform Trino data type to RustWrenEngineColumnType.
+    def _transform_column_type(self, data_type: str) -> RustAnalyticsEngineColumnType:
+        """Transform Trino data type to RustAnalyticsEngineColumnType.
 
         Args:
             data_type: The Trino data type string
 
         Returns:
-            The corresponding RustWrenEngineColumnType
+            The corresponding RustAnalyticsEngineColumnType
         """
         # Remove parameter specifications like VARCHAR(255) -> VARCHAR
         normalized_type = re.sub(r"\(.*\)", "", data_type).strip().lower()
 
         # Use the module-level mapping table
         mapped_type = TRINO_TYPE_MAPPING.get(
-            normalized_type, RustWrenEngineColumnType.UNKNOWN
+            normalized_type, RustAnalyticsEngineColumnType.UNKNOWN
         )
 
-        if mapped_type == RustWrenEngineColumnType.UNKNOWN:
+        if mapped_type == RustAnalyticsEngineColumnType.UNKNOWN:
             logger.warning(f"Unknown Trino data type: {data_type}")
 
         return mapped_type

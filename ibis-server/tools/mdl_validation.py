@@ -1,7 +1,7 @@
 #
 # This script is used to validate the MDL file by transforming the SQL queries
 # in the MDL file to the SQL queries. This script only validate if it can be transformed
-# by Wren core. It does not validate the SQL can be executed by the data source.
+# by Analytics core. It does not validate the SQL can be executed by the data source.
 #
 # Argements:
 # - manifest_json_path: Path to the JSON file
@@ -13,7 +13,7 @@ import base64
 import json
 
 from loguru import logger
-from wren_core import SessionContext
+from analytics_core import SessionContext
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description="Validate the MDL file")

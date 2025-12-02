@@ -22,7 +22,7 @@ glue_connection_info = {
     "aws_access_key_id": os.getenv("TEST_ATHENA_AWS_ACCESS_KEY_ID"),
     "aws_secret_access_key": os.getenv("TEST_ATHENA_AWS_SECRET_ACCESS_KEY"),
     "region_name": os.getenv("TEST_ATHENA_REGION_NAME", "ap-northeast-1"),
-    "schema_name": "wren-engine-glue-test",
+    "schema_name": "analytics-engine-glue-test",
 }
 
 manifest = {
